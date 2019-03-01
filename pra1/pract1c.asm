@@ -31,7 +31,35 @@ MOV ES, AX
 MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 ; FIN DE LAS INICIALIZACIONES
 ; COMIENZO DEL PROGRAMA
-; -- rellenar con las instrucciones solicitadas
+
+	;Suponiendo que DS=0535H, BX=0210H y DI=1011H, determinar las direcciones de memoria
+	;a las cuales acceden cada una de las siguientes instrucciones:
+	;a) MOV AL,DS:[1234H]
+	;b) MOV AX,[BX]
+	;c) MOV [DI],AL
+	
+	;Realizar un programa donde se pueda comprobar la respuesta desde el TD. La inicialización de
+	;contenidos necesarios es libre. Indicar en comentarios la dirección real prevista. 
+
+	; Inicializa los valores del enunciado
+	MOV AX, 0535H
+	MOV DS, AX
+	
+	MOV BX, 0210H
+	
+	MOV AX, 1011H
+	MOV DI, AX
+	
+	
+	;; Accede a esas posiciones
+	MOV AL, DS:[1234H]
+	MOV AX, [BX]
+	MOV [DI], AL
+	
+
+
+
+
 ; FIN DEL PROGRAMA
 MOV AX, 4C00H
 INT 21H

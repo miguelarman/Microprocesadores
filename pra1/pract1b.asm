@@ -3,7 +3,20 @@
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
-;-- rellenar con los datos solicitados
+
+	;Reservar memoria para una variable, CONTADOR, de un byte de tamaño.
+	CONTADOR 	DB	0
+
+	;Reservar memoria para una variable, TOME, de dos bytes de tamaño, e inicializarla con el valor CAFEH
+	TOME		DW	0CAFEH
+	
+	;Reservar 100 bytes para una tabla llamada TABLA100
+	TABLA100	DB	100 dup(?)
+	
+	;Guardar en memoria la cadena de texto “Atención: Entrada de datos incorrecta.”, de nombre ERROR1,
+	;para agilizar la salida de mensajes en un programa de corrección automática de prácticas.
+	ERROR1		DB	"Atención: Entrada de datos incorrecta.", 13, 0Ah
+
 DATOS ENDS
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE PILA
@@ -31,7 +44,20 @@ MOV ES, AX
 MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 ; FIN DE LAS INICIALIZACIONES
 ; COMIENZO DEL PROGRAMA
-; -- rellenar con las instrucciones solicitadas
+
+	; Copiar el tercer carácter de la cadena ERROR1 en la posición 63H de TABLA100
+	MOV AL, DS:[ERROR1 + 2]
+	MOV TABLA100[63H],  AL
+	
+	; Copiar el contenido de la variable TOME a partir de la posición 23H de TABLA100
+	MOV AX, DS:[TOME]
+	MOV WORD PTR TABLA100[23H], AX
+	
+	; Copiar el byte más significativo de TOME a la variable CONTADOR
+	MOV AX, DS:[TOME]
+	MOV BYTE PTR CONTADOR, AL
+
+
 ; FIN DEL PROGRAMA
 MOV AX, 4C00H
 INT 21H
