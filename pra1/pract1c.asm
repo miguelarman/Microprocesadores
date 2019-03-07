@@ -52,10 +52,11 @@ MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 	
 	
 	;; Accede a esas posiciones
-	MOV AL, DS:[1234H]
-	MOV AX, [BX]
-	MOV [DI], AL
+	MOV AL, DS:[1234H]			; Accede a 0535h + 1234h = 1769h
+	MOV AX, [BX]				; Accede a 0535h + 0210h = 0745h
+	MOV [DI], AL				; Accede a 0535h + 1011h = 1546h
 	
+	;; Cuando se accede a estas posiciones, desde el debugger se puede ver a qué direcciones se accede
 
 
 

@@ -5,17 +5,19 @@
 DATOS SEGMENT
 
 	;Reservar memoria para una variable, CONTADOR, de un byte de tamaño.
-	CONTADOR 	DB	0
+	CONTADOR 	DB	?		; Usamos DB para indicar que es un solo byte, y ? para reservar memoria sin inicializar
 
 	;Reservar memoria para una variable, TOME, de dos bytes de tamaño, e inicializarla con el valor CAFEH
-	TOME		DW	0CAFEH
+	TOME		DW	0CAFEH			; Usamos DW para indicar que son dos bytes y lo inicializamos
+									; (con 0 delante de CAFEh para que lo entienda el compilador)
 	
 	;Reservar 100 bytes para una tabla llamada TABLA100
-	TABLA100	DB	100 dup(?)
+	TABLA100	DB	100 dup(?)		; Reservamos memoria, pero al usar el ? no lo inicializamos
 	
 	;Guardar en memoria la cadena de texto “Atención: Entrada de datos incorrecta.”, de nombre ERROR1,
 	;para agilizar la salida de mensajes en un programa de corrección automática de prácticas.
 	ERROR1		DB	"Atención: Entrada de datos incorrecta.", 13, 0Ah
+					; Guardamos la cadena, y los caracteres 13 y 0Ah, que representan el final de cadena de caracteres
 
 DATOS ENDS
 ;**************************************************************************
@@ -46,16 +48,16 @@ MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 ; COMIENZO DEL PROGRAMA
 
 	; Copiar el tercer carácter de la cadena ERROR1 en la posición 63H de TABLA100
-	MOV AL, DS:[ERROR1 + 2]
+	MOV AL, DS:[ERROR1 + 2] ; El primer caracter está en el offset 0, y el tercero, como son bytes, en el offset 2
 	MOV TABLA100[63H],  AL
 	
 	; Copiar el contenido de la variable TOME a partir de la posición 23H de TABLA100
 	MOV AX, DS:[TOME]
-	MOV WORD PTR TABLA100[23H], AX
+	MOV WORD PTR TABLA100[23H], AX ; Hay que hacer casting, ya que los tamaños no son iguales
 	
 	; Copiar el byte más significativo de TOME a la variable CONTADOR
-	MOV AX, DS:[TOME]
-	MOV BYTE PTR CONTADOR, AL
+	MOV AX, DS:[TOME]			; Guardamos los dos bytes en AX, por lo que AL es el byte más significativo
+	MOV CONTADOR, AL  			; No hay que hacer casting, ya que CONTADOR ya está definido con un solo byte
 
 
 ; FIN DEL PROGRAMA
