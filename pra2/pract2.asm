@@ -5,7 +5,7 @@
 DATOS SEGMENT
 ;-- rellenar con los datos solicitados
 ; matriz db 9 dup (?)
-MATRIZ db 0, 0, 1, 0, 1, 0, 1, 0, 0
+MATRIZ db 1, 2, 3, 4, 5, 6, 7, 8, 1
 resultado dw ?
 
 DATOS ENDS
@@ -39,12 +39,13 @@ MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 ; COMIENZO DEL PROGRAMA
 
 ; Lectura de la matriz por entrada
+CALL LECTURA
 
 
 ; Cálculo del determinante
 
 ; Inicializa el resultado a cero
-
+MOV resultado, 0
 ; Subrutinas que calculan los productos de cada diagonal
 MOV CX, 0
 CALL DIAG_POS
@@ -67,8 +68,7 @@ CALL DIAG_NEG
 SUB resultado, AX
 
 ; Impresión del resultado por pantalla
-
-
+CALL IMPRESION
 
 
 ; FIN DEL PROGRAMA
@@ -79,6 +79,17 @@ INT 21H
 ; ------------------------------------
 ; SUBRUTINAS
 ; ------------------------------------
+
+
+;_______________________________________________________________ 
+; SUBRUTINA PARA LEER UNA MATRIZ 3X3 POR LA PANTALLA 
+; ENTRADA NINGUNA
+; SALIDA GUARDA EN MEMORIA LA MATRIZ 
+;_______________________________________________________________
+LECTURA PROC NEAR
+	RET
+LECTURA ENDP
+
 
 
 ;_______________________________________________________________ 
@@ -162,7 +173,14 @@ REINICIA_SI_NEG_2:
 
 DIAG_NEG ENDP
 
-
+;_______________________________________________________________ 
+; SUBRUTINA PARA IMPRIMIR EL DETERMINANTE CALCULADO POR PANTALLA 
+; ENTRADA NINGUNA (ESTÁ EN MEMORIA)
+; SALIDA NINGUNA
+;_______________________________________________________________
+IMPRESION PROC NEAR
+	RET
+IMPRESION ENDP
 
 INICIO ENDP
 ; FIN DEL SEGMENTO DE CODIGO
