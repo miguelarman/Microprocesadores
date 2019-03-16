@@ -4,10 +4,25 @@
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
 ;-- rellenar con los datos solicitados
-; matriz db 9 dup (?)
-MATRIZ db 1, 2, 3, 4, 5, 6, 7, 8, 1
-resultado dw ?
-
+	; MATRIZ db 9 dup (?)
+	MATRIZ db 1, 2, 3, 4, 5, 6, 7, 8, 1
+	resultado dw ?
+	
+	CLR_PANT 		DB 	1BH,"[2","J$"
+	DET_A db 1BH,"[4;1f|A| =  ",?,"$"
+	
+	OFFSET_INICIAL_LINEA dw 7
+	
+	PRIMERA_LINEA db 1BH,"[3;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	SEGUNDA_LINEA db 1BH,"[4;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	TERCERA_LINEA db 1BH,"[5;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	
+	IGUAL_RESULTADO db 1BH,"[4;20f = ", ?, ?, ?, ?, ?, "$"
+	OFFSET_RESULTADO dw 10
+	
+	VALOR_IMPRIMIR 	DB "-XY"
+	RESULTADO_IMPRIMIR 	DB "+ASDF"
+	
 DATOS ENDS
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE PILA
@@ -179,6 +194,152 @@ DIAG_NEG ENDP
 ; SALIDA NINGUNA
 ;_______________________________________________________________
 IMPRESION PROC NEAR
+
+	; BORRA LA PANTALLA
+	MOV AH,9	; BORRA LA PANTALLA
+	MOV DX, OFFSET CLR_PANT
+	INT 21H
+	
+	MOV DX,OFFSET DET_A
+	INT 21H
+	
+	; Guarda el ascii del resultado y lo imprime
+	MOV BP, OFFSET_RESULTADO
+	
+	MOV AL, RESULTADO_IMPRIMIR[0]
+	MOV IGUAL_RESULTADO[BP + 0], AL
+	MOV AL, RESULTADO_IMPRIMIR[1]
+	MOV IGUAL_RESULTADO[BP + 1], AL
+	MOV AL, RESULTADO_IMPRIMIR[2]
+	MOV IGUAL_RESULTADO[BP + 2], AL
+	MOV AL, RESULTADO_IMPRIMIR[3]
+	MOV IGUAL_RESULTADO[BP + 3], AL
+	MOV AL, RESULTADO_IMPRIMIR[4]
+	MOV IGUAL_RESULTADO[BP + 4], AL
+	
+	MOV DX,OFFSET IGUAL_RESULTADO
+	INT 21H
+	
+	; _________________________________________________________________
+	; Modifica los valores de la primera fila de la matriz y la imprime
+	; _________________________________________________________________
+	
+	; Primer valor
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV PRIMERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV PRIMERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV PRIMERA_LINEA[BP + 2], AL
+	
+	
+	; Segundo valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV PRIMERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV PRIMERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV PRIMERA_LINEA[BP + 2], AL
+	
+	
+	; Tercer valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV PRIMERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV PRIMERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV PRIMERA_LINEA[BP + 2], AL
+	
+	; Imprime la linea
+	MOV DX,OFFSET PRIMERA_LINEA
+	INT 21H
+	
+	; _________________________________________________________________
+	; Modifica los valores de la segunda fila de la matriz y la imprime
+	; _________________________________________________________________
+	
+	; Primer valor
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV SEGUNDA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV SEGUNDA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV SEGUNDA_LINEA[BP + 2], AL
+	
+	
+	; Segundo valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV SEGUNDA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV SEGUNDA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV SEGUNDA_LINEA[BP + 2], AL
+	
+	
+	; Tercer valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV SEGUNDA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV SEGUNDA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV SEGUNDA_LINEA[BP + 2], AL
+	
+	; Imprime la linea
+	MOV DX,OFFSET SEGUNDA_LINEA
+	INT 21H
+	
+	; _________________________________________________________________
+	; Modifica los valores de la tercera fila de la matriz y la imprime
+	; _________________________________________________________________
+	
+	; Primer valor
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV TERCERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV TERCERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV TERCERA_LINEA[BP + 2], AL
+	
+	
+	; Segundo valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV TERCERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV TERCERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV TERCERA_LINEA[BP + 2], AL
+	
+	
+	; Tercer valor
+	ADD BP, 4
+	
+	MOV AL, VALOR_IMPRIMIR[0]
+	MOV TERCERA_LINEA[BP + 0], AL
+	MOV AL, VALOR_IMPRIMIR[1]
+	MOV TERCERA_LINEA[BP + 1], AL
+	MOV AL, VALOR_IMPRIMIR[2]
+	MOV TERCERA_LINEA[BP + 2], AL
+	
+	; Imprime la linea
+	MOV DX,OFFSET TERCERA_LINEA
+	INT 21H
+	
 	RET
 IMPRESION ENDP
 
