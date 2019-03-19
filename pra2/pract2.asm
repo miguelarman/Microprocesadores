@@ -3,25 +3,28 @@
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
-;-- rellenar con los datos solicitados
-	; MATRIZ db 9 dup (?)
-	MATRIZ db 1, 2, 3, 4, 5, 6, 7, 8, 1
-	resultado dw ?
+
+	; MATRIZ				db 9 dup (?)
+	MATRIZ					db 1, 2, -3, 0, -5, -12, 7, 8, 10
+	resultado				dw ?
 	
-	CLR_PANT 		DB 	1BH,"[2","J$"
-	DET_A db 1BH,"[4;1f|A| =  ",?,"$"
+	CLR_PANT				db 1BH,"[2","J$"
+	DET_A					db 1BH,"[4;1f|A| =  $"
 	
-	OFFSET_INICIAL_LINEA dw 7
+	; Valores de las cadenas que vamos a usar para imprimir. Reservan espacio
+	; para los valores que se van a calcular, esperando numeros en la matriz
+	; de dos cifras (más signo) y 4 cifras de resultado (más signo)
+	PRIMERA_LINEA			db 1BH,"[3;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	SEGUNDA_LINEA			db 1BH,"[4;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	TERCERA_LINEA			db 1BH,"[5;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
+	IGUAL_RESULTADO			db 1BH,"[4;20f = ", ?, ?, ?, ?, ?, "$"
 	
-	PRIMERA_LINEA db 1BH,"[3;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	SEGUNDA_LINEA db 1BH,"[4;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	TERCERA_LINEA db 1BH,"[5;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	; Valores necesarios para escribir en el programa sobre las cadenas de caracteres anteriores
+	OFFSET_INICIAL_LINEA	dw 7
+	OFFSET_RESULTADO		dw 10
 	
-	IGUAL_RESULTADO db 1BH,"[4;20f = ", ?, ?, ?, ?, ?, "$"
-	OFFSET_RESULTADO dw 10
-	
-	VALOR_IMPRIMIR 	DB "-XY"
-	RESULTADO_IMPRIMIR 	DB "+ASDF"
+	VALOR_IMPRIMIR			db 3 dup (?), "$"
+	RESULTADO_IMPRIMIR		db 5 dup (?), "$"
 	
 DATOS ENDS
 ;**************************************************************************
@@ -196,11 +199,11 @@ DIAG_NEG ENDP
 IMPRESION PROC NEAR
 
 	; BORRA LA PANTALLA
-	MOV AH,9	; BORRA LA PANTALLA
+	MOV AH,9
 	MOV DX, OFFSET CLR_PANT
 	INT 21H
 	
-	MOV DX,OFFSET DET_A
+	MOV DX, OFFSET DET_A
 	INT 21H
 	
 	; Guarda el ascii del resultado y lo imprime
@@ -220,12 +223,15 @@ IMPRESION PROC NEAR
 	MOV AL, RESULTADO_IMPRIMIR[4]
 	MOV IGUAL_RESULTADO[BP + 4], AL
 	
-	MOV DX,OFFSET IGUAL_RESULTADO
+	; Imprime el resultado
+	MOV AH, 9
+	MOV DX, OFFSET IGUAL_RESULTADO
 	INT 21H
 	
 	; _________________________________________________________________
 	; Modifica los valores de la primera fila de la matriz y la imprime
 	; _________________________________________________________________
+	
 	
 	; Primer valor
 	MOV BP, OFFSET_INICIAL_LINEA
@@ -254,7 +260,6 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV PRIMERA_LINEA[BP + 2], AL
 	
-	
 	; Tercer valor
 	ADD BP, 4
 	
@@ -268,9 +273,12 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV PRIMERA_LINEA[BP + 2], AL
 	
+	
 	; Imprime la linea
-	MOV DX,OFFSET PRIMERA_LINEA
+	MOV AH, 9
+	MOV DX, OFFSET PRIMERA_LINEA
 	INT 21H
+	
 	
 	; _________________________________________________________________
 	; Modifica los valores de la segunda fila de la matriz y la imprime
@@ -318,7 +326,8 @@ IMPRESION PROC NEAR
 	MOV SEGUNDA_LINEA[BP + 2], AL
 	
 	; Imprime la linea
-	MOV DX,OFFSET SEGUNDA_LINEA
+	MOV AH, 9
+	MOV DX, OFFSET SEGUNDA_LINEA
 	INT 21H
 	
 	; _________________________________________________________________
@@ -367,7 +376,8 @@ IMPRESION PROC NEAR
 	MOV TERCERA_LINEA[BP + 2], AL
 	
 	; Imprime la linea
-	MOV DX,OFFSET TERCERA_LINEA
+	MOV AH, 9
+	MOV DX, OFFSET TERCERA_LINEA
 	INT 21H
 	
 	RET
@@ -380,8 +390,36 @@ IMPRESION ENDP
 ; SALIDA GUARDA EN VALOR_IMPRIMIR LOS TRES DIGITOS
 ;_______________________________________________________________ 
 
-CONVERT_ASCII_3 PROC NEAR 
+CONVERT_ASCII_3 PROC NEAR
+
+	MOV VALOR_IMPRIMIR[0], "+"
+	ADD CL, 0
+	JS ES_NEGATIVO
+	
+CONTINUAR:
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV VALOR_IMPRIMIR[2], AH
+	MOV CL, AL
+	
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV VALOR_IMPRIMIR[1], AH
+	MOV CL, AL
+	
     RET
+
+ES_NEGATIVO:
+	NEG CL
+	MOV VALOR_IMPRIMIR[0], "-"
+	JMP CONTINUAR
+	
 CONVERT_ASCII_3 ENDP
 
 
@@ -392,7 +430,50 @@ CONVERT_ASCII_3 ENDP
 ;_______________________________________________________________ 
 
 CONVERT_ASCII_5 PROC NEAR 
+    MOV RESULTADO_IMPRIMIR[0], "+"
+	ADD CL, 0
+	JS ES_NEGATIVO_5
+	
+CONTINUAR_5:
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV RESULTADO_IMPRIMIR[4], AH
+	MOV CL, AL
+	
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV RESULTADO_IMPRIMIR[3], AH
+	MOV CL, AL
+	
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV RESULTADO_IMPRIMIR[2], AH
+	MOV CL, AL
+	
+	MOV AL, CL
+	MOV AH, 0
+	MOV BL, 10
+	DIV BL
+	ADD AH, 30H
+	MOV RESULTADO_IMPRIMIR[1], AH
+	MOV CL, AL
+	
     RET
+
+ES_NEGATIVO_5:
+	NEG CL
+	MOV RESULTADO_IMPRIMIR[0], "-"
+	JMP CONTINUAR_5
+	
 CONVERT_ASCII_5 ENDP
 
 INICIO ENDP
