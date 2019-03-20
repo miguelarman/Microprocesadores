@@ -116,7 +116,11 @@ LECTURA ENDP
 ; SALIDA AX=RESULTADO 
 ;_______________________________________________________________ 
 
-DIAG_POS PROC NEAR 
+DIAG_POS PROC NEAR
+
+	; Guarda los valores de los registros que modifica
+	PUSH AX BX SI
+
     MOV AX, 1
 	
 	MOV BX, 0
@@ -139,6 +143,8 @@ CONTINUA_1:
 CONTINUA_2:
 	MUL MATRIZ[BX][SI]
 	
+	; Recupera los valores de los registros que ha modificado
+	POP SI BX AX
     RET
 
 REINICIA_SI_1: 
@@ -157,7 +163,11 @@ DIAG_POS ENDP
 ; SALIDA AX=RESULTADO 
 ;_______________________________________________________________ 
 
-DIAG_NEG PROC NEAR 
+DIAG_NEG PROC NEAR
+
+	; Guarda los valores de los registros que modifica
+	PUSH AX BX SI
+
     MOV AX, 1
 	
 	MOV BX, 0
@@ -179,7 +189,9 @@ CONTINUA_NEG_2:
 	ADD BX, 3
 	DEC SI
 	MUL MATRIZ[BX][SI]
- 
+	
+	; Recupera los valores de los registros que ha modificado
+	POP SI BX AX
     RET
 
 REINICIA_SI_NEG_1: 
@@ -197,6 +209,9 @@ DIAG_NEG ENDP
 ; SALIDA NINGUNA
 ;_______________________________________________________________
 IMPRESION PROC NEAR
+
+	; Guarda los valores de los registros que modifica
+	PUSH AX DX BP CX 
 
 	; BORRA LA PANTALLA
 	MOV AH,9
@@ -380,7 +395,10 @@ IMPRESION PROC NEAR
 	MOV DX, OFFSET TERCERA_LINEA
 	INT 21H
 	
+	; Recupera los valores de los registros que ha modificado
+	POP CX BP DX AX 
 	RET
+	
 IMPRESION ENDP
 
 
@@ -391,6 +409,9 @@ IMPRESION ENDP
 ;_______________________________________________________________ 
 
 CONVERT_ASCII_3 PROC NEAR
+
+	; Guarda los valores de los registros que modifica
+	PUSH AX BX CX
 
 	MOV VALOR_IMPRIMIR[0], "+"
 	ADD CL, 0
@@ -413,7 +434,9 @@ CONTINUAR:
 	MOV VALOR_IMPRIMIR[1], AH
 	MOV CL, AL
 	
-    RET
+    ; Recupera los valores de los registros que ha modificado
+	POP CX BX AX 
+	RET
 
 ES_NEGATIVO:
 	NEG CL
@@ -429,7 +452,11 @@ CONVERT_ASCII_3 ENDP
 ; SALIDA GUARDA EN RESULTADO_IMPRIMIR LOS TRES DIGITOS
 ;_______________________________________________________________ 
 
-CONVERT_ASCII_5 PROC NEAR 
+CONVERT_ASCII_5 PROC NEAR
+	
+	; Guarda los valores de los registros que modifica
+	PUSH AX BX CX
+	
     MOV RESULTADO_IMPRIMIR[0], "+"
 	ADD CL, 0
 	JS ES_NEGATIVO_5
@@ -467,7 +494,9 @@ CONTINUAR_5:
 	MOV RESULTADO_IMPRIMIR[1], AH
 	MOV CL, AL
 	
-    RET
+    ; Recupera los valores de los registros que ha modificado
+	POP CX BX AX 
+	RET
 
 ES_NEGATIVO_5:
 	NEG CL
