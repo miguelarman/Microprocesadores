@@ -1,19 +1,44 @@
 ;**************************************************************************
-; SBM 2019. ESTRUCTURA BÁSICA DE UN PROGRAMA EN ENSAMBLADOR
+;               SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  ;
+;                    PRÁCTICA 2: Juego de instrucciones					  ;
 ;**************************************************************************
+; Autores:																  ;
+; 			- Miguel Arconada Manteca									  ;
+;				(miguel.arconada@estudiante.uam.es)						  ;
+; 			- Mario García Pascual										  ;
+;				(mario.garciap@estudiante.uam.es)						  ;
+;**************************************************************************
+; Fecha:	21 de marzo de 2019											  ;
+;**************************************************************************
+; Descripción:															  ;
+;			En esta práctica se nos pide calcular el determinante de una  ;
+;		matriz 3x3, e imprimirlo por pantalla, para familiarizarnos		  ;
+;		con el juego de instrucciones del procesador 80x86, estudiado	  ;
+;		en la asignatura.												  ;
+;			Una vez realizado esto, se nos pide que añadamos el soporte	  ;
+;		para que el usuario pueda introducir por terminal sus propios	  ;
+;		valores de la matriz.											  ;
+;**************************************************************************
+
+
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
 
-	; MATRIZ				db 9 dup (?)
+	; Variables donde se guardan la matriz y su determinante
 	MATRIZ					db 1, 2, -3, 0, -5, -12, 7, 8, 10
-	resultado				dw ?
+	RESULTADO				dw ?
 	
+	; Cadena que limpia la pantalla
 	CLR_PANT				db 1BH,"[2","J$"
+	
+	; Cadena que se imprime la primera
 	DET_A					db 1BH,"[4;1f|A| =  $"
 	
 	; Valores de las cadenas que vamos a usar para imprimir. Reservan espacio
 	; para los valores que se van a calcular, esperando numeros en la matriz
-	; de dos cifras (más signo) y 4 cifras de resultado (más signo)
+	; de dos cifras (más signo) y 4 cifras de resultado (más signo).
+	; Usamos este método porque al imprimir usamos "coordenadas" en cada
+	; string, para que quede colocado en pantalla
 	PRIMERA_LINEA			db 1BH,"[3;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
 	SEGUNDA_LINEA			db 1BH,"[4;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
 	TERCERA_LINEA			db 1BH,"[5;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
@@ -22,81 +47,97 @@ DATOS SEGMENT
 	; Valores necesarios para escribir en el programa sobre las cadenas de caracteres anteriores
 	OFFSET_INICIAL_LINEA	dw 7
 	OFFSET_RESULTADO		dw 10
-	
+
+	; Variables en las que se guarda cada valor, antes de insertarlo en las variables anteriores
 	VALOR_IMPRIMIR			db 3 dup (?), "$"
 	RESULTADO_IMPRIMIR		db 5 dup (?), "$"
 	
+	; Esto se imprime para mover el cursor a la última línea de la terminal
+	APARTA_CURSOR			db 1BH,"[23;1f$"
+	
 DATOS ENDS
+
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE PILA
 PILA SEGMENT STACK "STACK"
-DB 40H DUP (0) ;ejemplo de inicialización, 64 bytes inicializados a 0
+	DB 40H DUP (0) ;ejemplo de inicialización, 64 bytes inicializados a 0
 PILA ENDS
+
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO EXTRA
 EXTRA SEGMENT
-RESULT DW 0,0 ;ejemplo de inicialización. 2 PALABRAS (4 BYTES)
+
 EXTRA ENDS
+
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE CODIGO
 CODE SEGMENT
-ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
+
+	ASSUME CS: CODE, DS: DATOS, ES: EXTRA, SS: PILA
+
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
 INICIO PROC
-; INICIALIZA LOS REGISTROS DE SEGMENTO CON SU VALOR
-MOV AX, DATOS
-MOV DS, AX
-MOV AX, PILA
-MOV SS, AX
-MOV AX, EXTRA
-MOV ES, AX
-MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
-; FIN DE LAS INICIALIZACIONES
+
+	; INICIALIZA LOS REGISTROS DE SEGMENTO CON SU VALOR
+	MOV AX, DATOS
+	MOV DS, AX
+	MOV AX, PILA
+	MOV SS, AX
+	MOV AX, EXTRA
+	MOV ES, AX
+	MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
+	; FIN DE LAS INICIALIZACIONES
 
 
-; COMIENZO DEL PROGRAMA
+	; COMIENZO DEL PROGRAMA
 
-; Lectura de la matriz por entrada
-CALL LECTURA
+	; --------------------------------
+	; Lectura de la matriz por entrada
+	; --------------------------------
+	CALL LECTURA
+
+	; ------------------------
+	; Cálculo del determinante
+	; ------------------------
+
+	; Inicializa el resultado a cero
+	MOV resultado, 0
+	
+	; Subrutinas que calculan los productos de cada diagonal positiva
+	MOV CX, 0			; Empezando en la primera columna
+	CALL DIAG_POS
+	ADD RESULTADO, AX
+	MOV CX, 1			; Empezando en la segunda columna
+	CALL DIAG_POS
+	ADD RESULTADO, AX
+	MOV CX, 2			; Empezando en la tercera columna
+	CALL DIAG_POS
+	ADD RESULTADO, AX
+
+	; Subrutinas que calculan los productos de cada diagonal negativa
+	MOV CX, 2			; Empezando en la tercera columna
+	CALL DIAG_NEG
+	SUB RESULTADO, AX
+	MOV CX, 1			; Empezando en la segunda columna
+	CALL DIAG_NEG
+	SUB RESULTADO, AX
+	MOV CX, 0			; Empezando en la primera columna
+	CALL DIAG_NEG
+	SUB RESULTADO, AX
+
+	; ------------------------------------
+	; Impresión del resultado por pantalla
+	; ------------------------------------
+	CALL IMPRESION
+
+	; FIN DEL PROGRAMA
+	MOV AX, 4C00H
+	INT 21H
 
 
-; Cálculo del determinante
-
-; Inicializa el resultado a cero
-MOV resultado, 0
-; Subrutinas que calculan los productos de cada diagonal
-MOV CX, 0
-CALL DIAG_POS
-ADD resultado, AX
-MOV CX, 1
-CALL DIAG_POS
-ADD resultado, AX
-MOV CX, 2
-CALL DIAG_POS
-ADD resultado, AX
-
-MOV CX, 2
-CALL DIAG_NEG
-SUB resultado, AX
-MOV CX, 1
-CALL DIAG_NEG
-SUB resultado, AX
-MOV CX, 0
-CALL DIAG_NEG
-SUB resultado, AX
-
-; Impresión del resultado por pantalla
-CALL IMPRESION
-
-
-; FIN DEL PROGRAMA
-MOV AX, 4C00H
-INT 21H
-
-
-; ------------------------------------
-; SUBRUTINAS
-; ------------------------------------
+; ------------------------------------;
+;              SUBRUTINAS             ;
+; ------------------------------------;
 
 
 ;_______________________________________________________________ 
@@ -121,23 +162,29 @@ DIAG_POS PROC NEAR
 	; Guarda los valores de los registros que modifica
 	PUSH AX BX SI
 
+	; Inicializa el resultado al elemento neutro de la operación
     MOV AX, 1
 	
+	; BX Indica la fila multiplicado por 3
 	MOV BX, 0
-	MOV SI, CX
-	MUL MATRIZ[BX][SI]
+	MOV SI, CX			; Carga la columna inicial en SI
+	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
 	
-	ADD BX, 3
-	INC SI
-	; if (si == 3) then si = 0
+	
+	ADD BX, 3	; Accede a la siguiente fila
+	INC SI		; Accede a la siguiente columna
+	
+	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 3
 	JE REINICIA_SI_1
 CONTINUA_1:
-	MUL MATRIZ[BX][SI]
+	MUL MATRIZ[BX][SI] ; Multiplica el resultado por el siguiente valor
 	
-	ADD BX, 3
-	INC SI
-	; if (si == 3) then si = 0
+	
+	ADD BX, 3	; Accede a la siguiente fila
+	INC SI		; Accede a la siguiente columna
+	
+	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 3
 	JE REINICIA_SI_2
 CONTINUA_2:
@@ -148,10 +195,10 @@ CONTINUA_2:
     RET
 
 REINICIA_SI_1: 
-    MOV SI, 0
+    MOV SI, 0		; Vuelve a poner la columna a cero
 	JMP CONTINUA_1
 REINICIA_SI_2: 
-    MOV SI, 0
+    MOV SI, 0		; Vuelve a poner la columna a cero
 	JMP CONTINUA_2
 
 DIAG_POS ENDP
@@ -168,37 +215,41 @@ DIAG_NEG PROC NEAR
 	; Guarda los valores de los registros que modifica
 	PUSH AX BX SI
 
+    ; Inicializa el resultado al elemento neutro de la operación
     MOV AX, 1
 	
+	; BX Indica la fila multiplicado por 3
 	MOV BX, 0
-	MOV SI, CX
-	MUL MATRIZ[BX][SI]
-	; if (si == 0) then si = 3
+	MOV SI, CX			; Carga la columna inicial en SI
+	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	
+	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 0
 	JE REINICIA_SI_NEG_1
 	
 CONTINUA_NEG_1:
-	ADD BX, 3
-	DEC SI
-	MUL MATRIZ[BX][SI]
-	; if (si == 0) then si = 3
+	ADD BX, 3			; Accede a la siguiente fila
+	DEC SI				; Accede a la columna anterior
+	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	
+	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 0
 	JE REINICIA_SI_NEG_2
 	
 CONTINUA_NEG_2:
-	ADD BX, 3
-	DEC SI
-	MUL MATRIZ[BX][SI]
+	ADD BX, 3			; Accede a la siguiente fila
+	DEC SI				; Accede a la columna anterior
+	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
 	
 	; Recupera los valores de los registros que ha modificado
 	POP SI BX AX
     RET
 
 REINICIA_SI_NEG_1: 
-    MOV SI, 3
+    MOV SI, 3			; Reinicia el contador de la columna
 	JMP CONTINUA_NEG_1
 REINICIA_SI_NEG_2: 
-    MOV SI, 3
+    MOV SI, 3			; Reinicia el contador de la columna
 	JMP CONTINUA_NEG_2
 
 DIAG_NEG ENDP
@@ -218,15 +269,19 @@ IMPRESION PROC NEAR
 	MOV DX, OFFSET CLR_PANT
 	INT 21H
 	
+	; Imprime |A| = 
 	MOV DX, OFFSET DET_A
 	INT 21H
 	
-	; Guarda el ascii del resultado y lo imprime
-	MOV BP, OFFSET_RESULTADO
-	
+	; Calcula el ascii del resultado y lo guarda en RESULTADO_IMPRIMIR
 	MOV CX, resultado
 	CALL CONVERT_ASCII_5
 	
+	; Guarda el offset del resultado en la cadena para imprimirlo
+	MOV BP, OFFSET_RESULTADO
+	
+	; Accede a cada uno de los "huecos" que se ha dejado en la cadena que
+	; se imprime para inicializarlos con los caracteres del resultado (signo y cuatro cifras)
 	MOV AL, RESULTADO_IMPRIMIR[0]
 	MOV IGUAL_RESULTADO[BP + 0], AL
 	MOV AL, RESULTADO_IMPRIMIR[1]
@@ -238,22 +293,28 @@ IMPRESION PROC NEAR
 	MOV AL, RESULTADO_IMPRIMIR[4]
 	MOV IGUAL_RESULTADO[BP + 4], AL
 	
-	; Imprime el resultado
+	; Imprime la cadena ya con el resultado
 	MOV AH, 9
 	MOV DX, OFFSET IGUAL_RESULTADO
 	INT 21H
 	
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	; Modifica los valores de la primera fila de la matriz y la imprime
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	
-	
+	; -------------
 	; Primer valor
-	MOV BP, OFFSET_INICIAL_LINEA
+	; -------------
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[0][0]
 	CALL CONVERT_ASCII_3
 	
+	; Inicializa BP con el offset en el que debe empezar a guardar los
+	; caracteres en la string correspondiente
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV PRIMERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -261,13 +322,18 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV PRIMERA_LINEA[BP + 2], AL
 	
-	
+	; -------------
 	; Segundo valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[0][1]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV PRIMERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -275,12 +341,18 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV PRIMERA_LINEA[BP + 2], AL
 	
+	; -------------
 	; Tercer valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[0][2]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV PRIMERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -295,16 +367,23 @@ IMPRESION PROC NEAR
 	INT 21H
 	
 	
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	; Modifica los valores de la segunda fila de la matriz y la imprime
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	
+	; -------------
 	; Primer valor
-	MOV BP, OFFSET_INICIAL_LINEA
+	; -------------
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[3][0]
 	CALL CONVERT_ASCII_3
 	
+	; Inicializa BP con el offset en el que debe empezar a guardar los
+	; caracteres en la string correspondiente
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV SEGUNDA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -312,13 +391,18 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV SEGUNDA_LINEA[BP + 2], AL
 	
-	
+	; -------------
 	; Segundo valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[3][1]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV SEGUNDA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -326,35 +410,48 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV SEGUNDA_LINEA[BP + 2], AL
 	
-	
+	; -------------
 	; Tercer valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[3][2]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV SEGUNDA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
 	MOV SEGUNDA_LINEA[BP + 1], AL
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV SEGUNDA_LINEA[BP + 2], AL
+	
 	
 	; Imprime la linea
 	MOV AH, 9
 	MOV DX, OFFSET SEGUNDA_LINEA
 	INT 21H
 	
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	; Modifica los valores de la tercera fila de la matriz y la imprime
-	; _________________________________________________________________
+	; -----------------------------------------------------------------
 	
+	; -------------
 	; Primer valor
-	MOV BP, OFFSET_INICIAL_LINEA
+	; -------------
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[6][0]
 	CALL CONVERT_ASCII_3
 	
+	; Inicializa BP con el offset en el que debe empezar a guardar los
+	; caracteres en la string correspondiente
+	MOV BP, OFFSET_INICIAL_LINEA
+	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV TERCERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -362,13 +459,18 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV TERCERA_LINEA[BP + 2], AL
 	
-	
+	; -------------
 	; Segundo valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[6][1]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV TERCERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
@@ -376,24 +478,36 @@ IMPRESION PROC NEAR
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV TERCERA_LINEA[BP + 2], AL
 	
-	
+	; -------------
 	; Tercer valor
+	; -------------
+	
+	; Incrementa BP hasta el "hueco" para el siguiente numero
 	ADD BP, 4
 	
+	; Convierte el siguiente elemento de la matriz a ascii y lo guarda en VALOR_IMPRIMIR
 	MOV CL, MATRIZ[6][2]
 	CALL CONVERT_ASCII_3
 	
+	; Guarda los tres caracteres del numero en la cadena correspondiente
 	MOV AL, VALOR_IMPRIMIR[0]
 	MOV TERCERA_LINEA[BP + 0], AL
 	MOV AL, VALOR_IMPRIMIR[1]
 	MOV TERCERA_LINEA[BP + 1], AL
 	MOV AL, VALOR_IMPRIMIR[2]
 	MOV TERCERA_LINEA[BP + 2], AL
+	
 	
 	; Imprime la linea
 	MOV AH, 9
 	MOV DX, OFFSET TERCERA_LINEA
 	INT 21H
+	
+	; Mueve el cursor al final de la pantalla para que no se vea junto
+	MOV AH, 9
+	MOV DX, OFFSET APARTA_CURSOR
+	INT 21H
+	
 	
 	; Recupera los valores de los registros que ha modificado
 	POP CX BP DX AX 
@@ -413,19 +527,31 @@ CONVERT_ASCII_3 PROC NEAR
 	; Guarda los valores de los registros que modifica
 	PUSH AX BX CX
 
+	; Inicializa el primer caracter como +
 	MOV VALOR_IMPRIMIR[0], "+"
-	ADD CL, 0
+	ADD CL, 0 ; No modifica el registro, pero puede comprobar si es negativo
 	JS ES_NEGATIVO
 	
+	; A partir de aquí se desarrolla el algoritmo de la división para calcular
+	; cada dígito del numero. Se hacen dos pasos, porque esta rutina es usada
+	; solo para los numeros de la matriz, que ya comprobamos anteriormente
+	; que estan el en rango [-16, 15]
 CONTINUAR:
-	MOV AL, CL
+	MOV AL, CL ; Inicializa AX con el valor a convertir (1 byte)
 	MOV AH, 0
-	MOV BL, 10
-	DIV BL
-	ADD AH, 30H
-	MOV VALOR_IMPRIMIR[2], AH
-	MOV CL, AL
+	MOV BL, 10 ; Inicializa BL con 10, el valor por el que se divide
 	
+	DIV BL ; Realiza la division
+	
+	; AH almacena el resto de la operación, que es lo que nos interesa,
+	; y le suma 30h, la diferencia para convertir un numero a ascii
+	ADD AH, 30H
+	MOV VALOR_IMPRIMIR[2], AH	; Guarda el primer resto (que será el último dígito)
+	MOV CL, AL					; Guarda el cociente en CL, para hacer otro paso del algoritmo
+	
+	; Realiza otro paso del algoritmo. Como son dos pasos, hemos decidido
+	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
+	; a explicar el algoritmo
 	MOV AL, CL
 	MOV AH, 0
 	MOV BL, 10
@@ -439,8 +565,8 @@ CONTINUAR:
 	RET
 
 ES_NEGATIVO:
-	NEG CL
-	MOV VALOR_IMPRIMIR[0], "-"
+	NEG CL						; Calcula el complemento a 2 del número para que funcione el algoritmo
+	MOV VALOR_IMPRIMIR[0], "-"	; Sobreescribe el signo como -
 	JMP CONTINUAR
 	
 CONVERT_ASCII_3 ENDP
@@ -457,19 +583,30 @@ CONVERT_ASCII_5 PROC NEAR
 	; Guarda los valores de los registros que modifica
 	PUSH AX BX CX
 	
-    MOV RESULTADO_IMPRIMIR[0], "+"
-	ADD CL, 0
+    ; Inicializa el primer caracter como +
+	MOV RESULTADO_IMPRIMIR[0], "+"
+	ADD CL, 0 ; No modifica el registro, pero puede comprobar si es negativo
 	JS ES_NEGATIVO_5
 	
+	; A partir de aquí se desarrolla el algoritmo de la división para calcular
+	; cada dígito del resultado. Se hacen cuatro pasos, porque esta rutina es usada
+	; solo para el resultado de la matriz, que sabemos que no va a superar estos dígitos
 CONTINUAR_5:
-	MOV AL, CL
+	MOV AL, CL	; Inicializa AX con el valor a convertir (1 byte)
 	MOV AH, 0
-	MOV BL, 10
-	DIV BL
-	ADD AH, 30H
-	MOV RESULTADO_IMPRIMIR[4], AH
-	MOV CL, AL
+	MOV BL, 10	; Inicializa BL con 10, el valor por el que se divide
 	
+	DIV BL ; Realiza la division
+	
+	; AH almacena el resto de la operación, que es lo que nos interesa,
+	; y le suma 30h, la diferencia para convertir un numero a ascii
+	ADD AH, 30H
+	MOV RESULTADO_IMPRIMIR[4], AH	; Guarda el primer resto (que será el último dígito)
+	MOV CL, AL						; Guarda el cociente en CL, para hacer otro paso del algoritmo
+	
+	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
+	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
+	; a explicar el algoritmo
 	MOV AL, CL
 	MOV AH, 0
 	MOV BL, 10
@@ -478,6 +615,9 @@ CONTINUAR_5:
 	MOV RESULTADO_IMPRIMIR[3], AH
 	MOV CL, AL
 	
+	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
+	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
+	; a explicar el algoritmo
 	MOV AL, CL
 	MOV AH, 0
 	MOV BL, 10
@@ -486,6 +626,9 @@ CONTINUAR_5:
 	MOV RESULTADO_IMPRIMIR[2], AH
 	MOV CL, AL
 	
+	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
+	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
+	; a explicar el algoritmo
 	MOV AL, CL
 	MOV AH, 0
 	MOV BL, 10
@@ -499,14 +642,16 @@ CONTINUAR_5:
 	RET
 
 ES_NEGATIVO_5:
-	NEG CL
-	MOV RESULTADO_IMPRIMIR[0], "-"
+	NEG CL							; Calcula el complemento a dos del número para seguir con el algoritmo
+	MOV RESULTADO_IMPRIMIR[0], "-"	; Sobreescribe el signo del número como -
 	JMP CONTINUAR_5
 	
 CONVERT_ASCII_5 ENDP
 
 INICIO ENDP
+
 ; FIN DEL SEGMENTO DE CODIGO
 CODE ENDS
+
 ; FIN DEL PROGRAMA INDICANDO DONDE COMIENZA LA EJECUCION
 END INICIO
