@@ -25,27 +25,27 @@
 DATOS SEGMENT
 
 	; Variables donde se guardan la matriz y su determinante
-	MATRIZ					db 1, 2, -3, 0, -5, -12, 7, 8, 10
+	MATRIZ					db -1, 2, -3, 0, -5, -12, 7, 8, 10
 	RESULTADO				dw ?
 	
 	; Cadena que limpia la pantalla
 	CLR_PANT				db 1BH,"[2","J$"
 	
 	; Cadena que se imprime la primera
-	DET_A					db 1BH,"[4;1f|A| =  $"
+	DET_A					db 1BH,"[4;21f|A| =  $"
 	
 	; Valores de las cadenas que vamos a usar para imprimir. Reservan espacio
 	; para los valores que se van a calcular, esperando numeros en la matriz
 	; de dos cifras (más signo) y 4 cifras de resultado (más signo).
 	; Usamos este método porque al imprimir usamos "coordenadas" en cada
 	; string, para que quede colocado en pantalla
-	PRIMERA_LINEA			db 1BH,"[3;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	SEGUNDA_LINEA			db 1BH,"[4;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	TERCERA_LINEA			db 1BH,"[5;7f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
-	IGUAL_RESULTADO			db 1BH,"[4;20f = ", ?, ?, ?, ?, ?, "$"
+	PRIMERA_LINEA			db 1BH,"[3;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	SEGUNDA_LINEA			db 1BH,"[4;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	TERCERA_LINEA			db 1BH,"[5;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
+	IGUAL_RESULTADO			db 1BH,"[4;40f = ", ?, ?, ?, ?, ?, "$"
 	
 	; Valores necesarios para escribir en el programa sobre las cadenas de caracteres anteriores
-	OFFSET_INICIAL_LINEA	dw 7
+	OFFSET_INICIAL_LINEA	dw 8
 	OFFSET_RESULTADO		dw 10
 
 	; Variables en las que se guarda cada valor, antes de insertarlo en las variables anteriores
@@ -101,29 +101,23 @@ INICIO PROC
 	; ------------------------
 
 	; Inicializa el resultado a cero
-	MOV resultado, 0
+	MOV RESULTADO, 0
 	
 	; Subrutinas que calculan los productos de cada diagonal positiva
 	MOV CX, 0			; Empezando en la primera columna
 	CALL DIAG_POS
-	ADD RESULTADO, AX
 	MOV CX, 1			; Empezando en la segunda columna
 	CALL DIAG_POS
-	ADD RESULTADO, AX
 	MOV CX, 2			; Empezando en la tercera columna
 	CALL DIAG_POS
-	ADD RESULTADO, AX
 
 	; Subrutinas que calculan los productos de cada diagonal negativa
 	MOV CX, 2			; Empezando en la tercera columna
 	CALL DIAG_NEG
-	SUB RESULTADO, AX
 	MOV CX, 1			; Empezando en la segunda columna
 	CALL DIAG_NEG
-	SUB RESULTADO, AX
 	MOV CX, 0			; Empezando en la primera columna
 	CALL DIAG_NEG
-	SUB RESULTADO, AX
 
 	; ------------------------------------
 	; Impresión del resultado por pantalla
@@ -140,35 +134,41 @@ INICIO PROC
 ; ------------------------------------;
 
 
-;_______________________________________________________________ 
+;-------------------------------------------------------------------------- 
 ; SUBRUTINA PARA LEER UNA MATRIZ 3X3 POR LA PANTALLA 
 ; ENTRADA NINGUNA
 ; SALIDA GUARDA EN MEMORIA LA MATRIZ 
-;_______________________________________________________________
+;-------------------------------------------------------------------------- 
 LECTURA PROC NEAR
 	RET
 LECTURA ENDP
 
 
 
-;_______________________________________________________________ 
+; ------------------------------------------------------------ 
 ; SUBRUTINA PARA CALCULAR UNA DIAGONAL POSITIVA DE UNA MATRIZ 
 ; ENTRADA CX: VALOR INICIAL DE LA SEGUNDA COORDENADA
-; SALIDA AX=RESULTADO 
-;_______________________________________________________________ 
+; SALIDA: MODIFICA EN MEMORIA EL DETERMINANTE DE LA MATRIZ
+; ------------------------------------------------------------ 
 
 DIAG_POS PROC NEAR
 
 	; Guarda los valores de los registros que modifica
-	PUSH AX BX SI
+	PUSH AX BX SI DX
 
 	; Inicializa el resultado al elemento neutro de la operación
     MOV AX, 1
 	
 	; BX Indica la fila multiplicado por 3
 	MOV BX, 0
-	MOV SI, CX			; Carga la columna inicial en SI
-	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	MOV SI, CX				; Carga la columna inicial en SI
+	
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX
+NEXT:
+	IMUL DX					; Multiplica el resultado por el siguiente valor
 	
 	
 	ADD BX, 3	; Accede a la siguiente fila
@@ -177,8 +177,14 @@ DIAG_POS PROC NEAR
 	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 3
 	JE REINICIA_SI_1
+	
 CONTINUA_1:
-	MUL MATRIZ[BX][SI] ; Multiplica el resultado por el siguiente valor
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX_1
+NEXT_1:
+	IMUL DX ; Multiplica el resultado por el siguiente valor
 	
 	
 	ADD BX, 3	; Accede a la siguiente fila
@@ -188,10 +194,18 @@ CONTINUA_1:
 	CMP SI, 3
 	JE REINICIA_SI_2
 CONTINUA_2:
-	MUL MATRIZ[BX][SI]
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX_2
+NEXT_2:
+	IMUL DX ; Multiplica el resultado por el siguiente valor
+	
+	; Suma el valor de la diagonal al resultado anterior
+	ADD RESULTADO, AX
 	
 	; Recupera los valores de los registros que ha modificado
-	POP SI BX AX
+	POP DX SI BX AX
     RET
 
 REINICIA_SI_1: 
@@ -200,15 +214,24 @@ REINICIA_SI_1:
 REINICIA_SI_2: 
     MOV SI, 0		; Vuelve a poner la columna a cero
 	JMP CONTINUA_2
+NEGATIVO_AUX:
+	MOV DH, 0FFh
+	JMP NEXT
+NEGATIVO_AUX_1:
+	MOV DH, 0FFh
+	JMP NEXT_1
+NEGATIVO_AUX_2:
+	MOV DH, 0FFh
+	JMP NEXT_2
 
 DIAG_POS ENDP
 
 
-;_______________________________________________________________ 
+; ------------------------------------------------------------ 
 ; SUBRUTINA PARA CALCULAR UNA DIAGONAL NEGATIVA DE UNA MATRIZ 
 ; ENTRADA CX: VALOR INICIAL DE LA SEGUNDA COORDENADA
-; SALIDA AX=RESULTADO 
-;_______________________________________________________________ 
+; SALIDA: MODIFICA EN MEMORIA EL DETERMINANTE DE LA MATRIZ
+; ------------------------------------------------------------ 
 
 DIAG_NEG PROC NEAR
 
@@ -221,7 +244,13 @@ DIAG_NEG PROC NEAR
 	; BX Indica la fila multiplicado por 3
 	MOV BX, 0
 	MOV SI, CX			; Carga la columna inicial en SI
-	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX_N_1
+NEXT_N_1:
+	MUL DX	; Multiplica el resultado por el siguiente valor
 	
 	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 0
@@ -230,7 +259,12 @@ DIAG_NEG PROC NEAR
 CONTINUA_NEG_1:
 	ADD BX, 3			; Accede a la siguiente fila
 	DEC SI				; Accede a la columna anterior
-	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX_N_2
+NEXT_N_2:
+	MUL DX	; Multiplica el resultado por el siguiente valor
 	
 	; Si la columna "se sale" de la matriz la vuelve a poner a cero
 	CMP SI, 0
@@ -239,7 +273,15 @@ CONTINUA_NEG_1:
 CONTINUA_NEG_2:
 	ADD BX, 3			; Accede a la siguiente fila
 	DEC SI				; Accede a la columna anterior
-	MUL MATRIZ[BX][SI]	; Multiplica el resultado por el siguiente valor
+	MOV DL, MATRIZ[BX][SI]	; Carga el siguiente valor en DX
+	MOV DH, 0
+	ADD DL, 0
+	JS NEGATIVO_AUX_N_3
+NEXT_N_3:
+	MUL DX	; Multiplica el resultado por el siguiente valor
+	
+	; Resta el valor de la diagonal del resultado anterior
+	SUB RESULTADO, AX
 	
 	; Recupera los valores de los registros que ha modificado
 	POP SI BX AX
@@ -251,14 +293,23 @@ REINICIA_SI_NEG_1:
 REINICIA_SI_NEG_2: 
     MOV SI, 3			; Reinicia el contador de la columna
 	JMP CONTINUA_NEG_2
+NEGATIVO_AUX_N_1:
+	MOV DH, 0FFh
+	JMP NEXT_N_1
+NEGATIVO_AUX_N_2:
+	MOV DH, 0FFh
+	JMP NEXT_N_2
+NEGATIVO_AUX_N_3:
+	MOV DH, 0FFh
+	JMP NEXT_N_3
 
 DIAG_NEG ENDP
 
-;_______________________________________________________________ 
+; ---------------------------------------------------------------- 
 ; SUBRUTINA PARA IMPRIMIR EL DETERMINANTE CALCULADO POR PANTALLA 
-; ENTRADA NINGUNA (ESTÁ EN MEMORIA)
-; SALIDA NINGUNA
-;_______________________________________________________________
+; ENTRADA: NINGUNA (LEE DE MEMORIA)
+; SALIDA: NINGUNA
+; ---------------------------------------------------------------- 
 IMPRESION PROC NEAR
 
 	; Guarda los valores de los registros que modifica
@@ -274,7 +325,7 @@ IMPRESION PROC NEAR
 	INT 21H
 	
 	; Calcula el ascii del resultado y lo guarda en RESULTADO_IMPRIMIR
-	MOV CX, resultado
+	MOV CX, RESULTADO
 	CALL CONVERT_ASCII_5
 	
 	; Guarda el offset del resultado en la cadena para imprimirlo
@@ -516,11 +567,11 @@ IMPRESION PROC NEAR
 IMPRESION ENDP
 
 
-;_______________________________________________________________ 
+;-------------------------------------------------------------------------- 
 ; SUBRUTINA PARA CONVERTIR UN NUMERO A TRES DIGITOS ASCII (INCLUIDO SIGNO)
 ; ENTRADA CL: NUMERO A CONVERTIR
 ; SALIDA GUARDA EN VALOR_IMPRIMIR LOS TRES DIGITOS
-;_______________________________________________________________ 
+;-------------------------------------------------------------------------- 
 
 CONVERT_ASCII_3 PROC NEAR
 
@@ -572,77 +623,80 @@ ES_NEGATIVO:
 CONVERT_ASCII_3 ENDP
 
 
-;_______________________________________________________________ 
+;-------------------------------------------------------------------------- 
 ; SUBRUTINA PARA CONVERTIR UN NUMERO A CINCO DIGITOS ASCII (INCLUIDO SIGNO)
 ; ENTRADA CX: NUMERO A CONVERTIR
 ; SALIDA GUARDA EN RESULTADO_IMPRIMIR LOS TRES DIGITOS
-;_______________________________________________________________ 
+;-------------------------------------------------------------------------- 
 
 CONVERT_ASCII_5 PROC NEAR
 	
 	; Guarda los valores de los registros que modifica
-	PUSH AX BX CX
+	PUSH AX BX CX DX
 	
     ; Inicializa el primer caracter como +
 	MOV RESULTADO_IMPRIMIR[0], "+"
-	ADD CL, 0 ; No modifica el registro, pero puede comprobar si es negativo
+	ADD CX, 0 ; No modifica el registro, pero puede comprobar si es negativo
 	JS ES_NEGATIVO_5
 	
 	; A partir de aquí se desarrolla el algoritmo de la división para calcular
 	; cada dígito del resultado. Se hacen cuatro pasos, porque esta rutina es usada
 	; solo para el resultado de la matriz, que sabemos que no va a superar estos dígitos
 CONTINUAR_5:
-	MOV AL, CL	; Inicializa AX con el valor a convertir (1 byte)
-	MOV AH, 0
-	MOV BL, 10	; Inicializa BL con 10, el valor por el que se divide
+	MOV AX, CX	; Inicializa AX con el valor a convertir (2 byte)
+	MOV DX, 0
+	MOV BX, 10	; Inicializa BL con 10, el valor por el que se divide
 	
-	DIV BL ; Realiza la division
+	DIV BX ; Realiza la division
 	
-	; AH almacena el resto de la operación, que es lo que nos interesa,
+	; DX almacena el resto de la operación, que es lo que nos interesa,
 	; y le suma 30h, la diferencia para convertir un numero a ascii
-	ADD AH, 30H
-	MOV RESULTADO_IMPRIMIR[4], AH	; Guarda el primer resto (que será el último dígito)
-	MOV CL, AL						; Guarda el cociente en CL, para hacer otro paso del algoritmo
+	ADD DX, 30H
+	MOV RESULTADO_IMPRIMIR[4], DL	; Guarda el primer resto (que será el último dígito)
+	MOV CX, AX						; Guarda el cociente en CL, para hacer otro paso del algoritmo
 	
 	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
 	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
 	; a explicar el algoritmo
-	MOV AL, CL
-	MOV AH, 0
-	MOV BL, 10
-	DIV BL
-	ADD AH, 30H
-	MOV RESULTADO_IMPRIMIR[3], AH
-	MOV CL, AL
+	MOV AX, CX
+	MOV DX, 0
+	MOV BX, 10	; Inicializa BL con 10, el valor por el que se divide
+	
+	DIV BX
+	ADD DX, 30H
+	MOV RESULTADO_IMPRIMIR[3], DL
+	MOV CX, AX
 	
 	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
 	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
 	; a explicar el algoritmo
-	MOV AL, CL
-	MOV AH, 0
-	MOV BL, 10
-	DIV BL
-	ADD AH, 30H
-	MOV RESULTADO_IMPRIMIR[2], AH
-	MOV CL, AL
+	MOV AX, CX
+	MOV DX, 0
+	MOV BX, 10	; Inicializa BL con 10, el valor por el que se divide
+	
+	DIV BX
+	ADD DX, 30H
+	MOV RESULTADO_IMPRIMIR[2], DL
+	MOV CX, AX
 	
 	; Realiza otro paso del algoritmo. Como son cuatro pasos, hemos decidido
 	; no utilizar bucles, que dificulten la comprensión del código. No volvemos
 	; a explicar el algoritmo
-	MOV AL, CL
-	MOV AH, 0
-	MOV BL, 10
-	DIV BL
-	ADD AH, 30H
-	MOV RESULTADO_IMPRIMIR[1], AH
-	MOV CL, AL
+	MOV AX, CX
+	MOV DX, 0
+	MOV BX, 10	; Inicializa BL con 10, el valor por el que se divide
+	
+	DIV BX
+	ADD DX, 30H
+	MOV RESULTADO_IMPRIMIR[1], DL
+	MOV CX, AX
 	
     ; Recupera los valores de los registros que ha modificado
-	POP CX BX AX 
+	POP DX CX BX AX 
 	RET
 
 ES_NEGATIVO_5:
-	NEG CL							; Calcula el complemento a dos del número para seguir con el algoritmo
+	NEG CX							; Calcula el complemento a dos del número para seguir con el algoritmo
 	MOV RESULTADO_IMPRIMIR[0], "-"	; Sobreescribe el signo del número como -
 	JMP CONTINUAR_5
 	
