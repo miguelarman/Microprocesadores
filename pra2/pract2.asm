@@ -55,6 +55,20 @@ DATOS SEGMENT
 	; Esto se imprime para mover el cursor a la última línea de la terminal
 	APARTA_CURSOR			db 1BH,"[23;1f$"
 	
+	; Variables necesarias para la lectura inicial
+	signo  db 0
+    buff db 36, ?
+    string  db 36 dup(0)
+    bienvenida db "Introduzca los 9 datos separados SOLO por comas",
+               db " (sin espacios), con un maximo de 2 digitos por",
+               db " numero e indicando los numeros negativos con u",
+               db "n - delante, por ejemplo ->1,-2,3,-4,11,-12,13,",
+               db "-14,15[ENTER]. Ademas, los numeros introducidos",
+               db " deberan estar en el rango [-16,15].", 10, 13, 10, 13, "$"
+    perror1    db 10, 13, "Error: datos fuera de rango$"
+    perror2    db 10, 13, "Error: datos insuficientes$"
+    perror3    db 10, 13, "Error: formato incorrecto$"
+	
 DATOS ENDS
 
 ;**************************************************************************
@@ -140,7 +154,126 @@ INICIO PROC
 ; SALIDA GUARDA EN MEMORIA LA MATRIZ 
 ;-------------------------------------------------------------------------- 
 LECTURA PROC NEAR
-	RET
+	; A partir de aqui empieza la rutina,
+    ; al final lo voy a hacer todo en una
+    
+    ; Da la bienvenida al usuario y le indica
+    ; como introducir los datos
+    lea dx, bienvenida
+    mov ah, 9
+    int 21h
+    
+    
+    ; Coge el input del usuario
+    mov ah, 10
+    mov dx, offset buff  
+    int 21h
+    
+    mov si, 0
+    mov di, 0
+    
+bucle:
+    mov al, string[si]
+    cmp al, "-"
+    jne else_jump
+    mov signo, 1
+    inc si
+    mov al, string[si]
+    jmp both
+else_jump:
+    mov signo, 0
+both:
+    sub al, "0"
+    mov dl, string[si+1]
+    cmp dl, ","
+    je write1
+    cmp dl, 13         ; 13 es el retorno de carro
+    je write1
+    sub dl, "0"
+    jmp write2 
+        
+finbucle:              ; Si DI es distinto de 9 es que
+    cmp di, 9          ; no se han almacenado suficientes
+    jne error2         ; datos
+    jmp retorno
+        
+    
+write1:
+    mov ah, 0           ; El numero a escribir esta en AL,
+    cmp signo, 1        ; si es un numero negativo toma el
+    jne j1              ; complemento a 2
+    neg ax
+
+j1: cmp ax, -16         ; Comprueba rangos y escribe
+    jl error1
+    cmp ax, 15
+    jg error1
+    mov matriz[di], ax
+    
+    inc di              ; Aumenta los indices
+    add si, 2
+    
+    cmp dl, 13          ; Comprueba si el caracter siguiente 
+    je finbucle         ; es de control (coma o retorno), actua
+    cmp dl, ","         ; formato en caso contrario. Esta en DL 
+    jne error3          ; en consecuencia y devuelve error de
+
+    cmp di, 9
+    jl bucle
+    jmp finbucle
+    
+write2:
+    mov ah, 10          ; El digito alto del numero a escribir esta
+    mov dh, 0           ; en AL y el bajo en DL, si es un numero
+    mul ah              ; negativo toma el complemento a dos
+    add ax, dx
+    cmp signo, 1
+    jne j2
+    neg ax
+    
+j2: cmp ax, -16         ; Comprueba rangos y escribe
+    jl error1
+    cmp ax, 15
+    jg error1
+    mov matriz[di], ax
+    
+    inc di              ; Aumenta los indices
+    add si, 3
+    
+    mov dl, string[si-1]   ; Al aumentar 3 estamos posicionados en el
+    cmp dl, 13          ; siguiente digito, por eso -1 para mirar atras.
+    je finbucle         ; Comprueba si el caracter siguiente es de
+    cmp dl, ","         ; control, devuelve error en caso contrario
+    jne error3
+        
+    cmp di, 9
+    jl bucle
+    jmp finbucle 
+    
+error1:
+    lea dx, perror1
+    mov ah, 9
+    int 21h
+    jmp exit
+    
+error2:
+    lea dx, perror2
+    mov ah, 9
+    int 21h
+    jmp exit
+    
+error3:
+    lea dx, perror3
+    mov ah, 9
+    int 21h
+    jmp exit
+    
+retorno: ; Esto seria el retorno del procedimiento que sea
+    RET    
+    
+exit:
+    mov ah, 4ch ; exit to operating system.
+    int 21h
 LECTURA ENDP
 
 
