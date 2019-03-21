@@ -64,7 +64,7 @@ DATOS SEGMENT
     PERROR1					db 10, 13, "Error: datos fuera de rango$"
     PERROR2					db 10, 13, "Error: datos insuficientes$"
     PERROR3					db 10, 13, "Error: formato incorrecto$"
-    INICIO                  db "Escribe 'y' si quieres introducir los datos por teclado, cualquier otro caracter si quieres ejecutar el programa con valores por defecto.", 10, 13, "$" 
+    PREGUNTA                  db "Escribe 'y' si quieres introducir los datos por teclado, cualquier otro caracter si quieres ejecutar el programa con valores por defecto.", 10, 13, "$" 
 	
 DATOS ENDS
 
@@ -159,7 +159,7 @@ LECTURA PROC NEAR
 	; Se pregunta al usuario si quiere introducir datos o probarlo con los datos
 	; por defecto
 	
-	LEA DX, INICIO
+	LEA DX, PREGUNTA
 	MOV AH, 9
 	INT 21h
 	
