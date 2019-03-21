@@ -217,7 +217,7 @@ j1: cmp ax, -16         ; Comprueba rangos y escribe
     je finbucle         ; es de control (coma o retorno), actua
     cmp dl, ","         ; formato en caso contrario. Esta en DL 
     jne error3          ; en consecuencia y devuelve error de
-                            
+
     cmp di, 9
     jl bucle
     jmp finbucle
