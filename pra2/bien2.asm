@@ -29,6 +29,34 @@ start:
     mov ds, ax
     mov es, ax
     
+    ; A partir de aqui empieza la rutina que lee la entrada del usuario	
+	LEA DX, CLR_PANT
+	MOV AH, 9
+	INT 21H
+	
+	; Se pregunta al usuario si quiere introducir datos o probarlo con los datos
+	; por defecto
+	
+	LEA DX, INICIO
+	MOV AH, 9
+	INT 21h
+	
+	MOV AH, 1
+	INT 21h
+	
+	CMP AL, "y"
+	JE INTRODUCIR
+	RET   
+    
+    ; Da la bienvenida al usuario y le indica
+    ; como introducir los datos
+INTRODUCIR:
+
+    LEA DX, CLR_PANT
+	MOV AH, 9
+	INT 21H
+	
+    
     ; A partir de aqui empieza la rutina,
     ; al final lo voy a hacer todo en una
     
