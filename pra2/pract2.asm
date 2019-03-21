@@ -32,21 +32,21 @@ DATOS SEGMENT
 	CLR_PANT				db 1BH,"[2","J$"
 	
 	; Cadena que se imprime la primera
-	DET_A					db 1BH,"[4;21f|A| =  $"
+	DET_A					db 1BH,"[14;21f|A| =  $"
 	
 	; Valores de las cadenas que vamos a usar para imprimir. Reservan espacio
 	; para los valores que se van a calcular, esperando numeros en la matriz
 	; de dos cifras (más signo) y 4 cifras de resultado (más signo).
 	; Usamos este método porque al imprimir usamos "coordenadas" en cada
 	; string, para que quede colocado en pantalla
-	PRIMERA_LINEA			db 1BH,"[3;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	SEGUNDA_LINEA			db 1BH,"[4;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
-	TERCERA_LINEA			db 1BH,"[5;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
-	IGUAL_RESULTADO			db 1BH,"[4;40f = ", ?, ?, ?, ?, ?, "$"
+	PRIMERA_LINEA			db 1BH,"[13;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	SEGUNDA_LINEA			db 1BH,"[14;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"
+	TERCERA_LINEA			db 1BH,"[15;27f|", ?, ?, ?, " ", ?, ?, ?, " ", ?, ?, ?, "|$"	
+	IGUAL_RESULTADO			db 1BH,"[14;40f = ", ?, ?, ?, ?, ?, "$"
 	
 	; Valores necesarios para escribir en el programa sobre las cadenas de caracteres anteriores
-	OFFSET_INICIAL_LINEA	dw 8
-	OFFSET_RESULTADO		dw 10
+	OFFSET_INICIAL_LINEA	dw 9
+	OFFSET_RESULTADO		dw 11
 
 	; Variables en las que se guarda cada valor, antes de insertarlo en las variables anteriores
 	VALOR_IMPRIMIR			db 3 dup (?), "$"
@@ -56,18 +56,14 @@ DATOS SEGMENT
 	APARTA_CURSOR			db 1BH,"[23;1f$"
 	
 	; Variables necesarias para la lectura inicial
-	signo  db 0
-    buff db 36, ?
-    string  db 36 dup(0)
-    bienvenida db "Introduzca los 9 datos separados SOLO por comas",
-               db " (sin espacios), con un maximo de 2 digitos por",
-               db " numero e indicando los numeros negativos con u",
-               db "n - delante, por ejemplo ->1,-2,3,-4,11,-12,13,",
-               db "-14,15[ENTER]. Ademas, los numeros introducidos",
-               db " deberan estar en el rango [-16,15].", 10, 13, 10, 13, "$"
-    perror1    db 10, 13, "Error: datos fuera de rango$"
-    perror2    db 10, 13, "Error: datos insuficientes$"
-    perror3    db 10, 13, "Error: formato incorrecto$"
+	SIGNO					db 0
+    BUFF					db 36, ?
+    STRING					db 36 dup(0)
+    BIENVENIDA				db "Introduzca los 9 datos separados SOLO por comas (sin espacios), con un maximo de 2 digitos por numero e indicando los numeros negativos con un - delante, por ejemplo ->1,-2,3,-4,11,-12,13,-14,15"
+							db "[ENTER]. Ademas, los numeros introducidos deberan estar en el rango [-16,15].", 10, 13, 10, 13, "$"
+    PERROR1					db 10, 13, "Error: datos fuera de rango$"
+    PERROR2					db 10, 13, "Error: datos insuficientes$"
+    PERROR3					db 10, 13, "Error: formato incorrecto$"
 	
 DATOS ENDS
 
@@ -154,126 +150,128 @@ INICIO PROC
 ; SALIDA GUARDA EN MEMORIA LA MATRIZ 
 ;-------------------------------------------------------------------------- 
 LECTURA PROC NEAR
-	; A partir de aqui empieza la rutina,
-    ; al final lo voy a hacer todo en una
+	; A partir de aqui empieza la rutina que lee la entrada del usuario	
+	MOV DX, OFFSET CLR_PANT
+	MOV AH, 9
+	INT 21H
     
     ; Da la bienvenida al usuario y le indica
     ; como introducir los datos
-    lea dx, bienvenida
-    mov ah, 9
-    int 21h
+    LEA DX, BIENVENIDA
+    MOV AH, 9
+    INT 21h
     
     
     ; Coge el input del usuario
-    mov ah, 10
-    mov dx, offset buff  
-    int 21h
+    MOV AH, 10
+    MOV DX, OFFSET BUFF  
+    INT 21h
     
-    mov si, 0
-    mov di, 0
+    MOV SI, 0
+    MOV DI, 0
     
-bucle:
-    mov al, string[si]
-    cmp al, "-"
-    jne else_jump
-    mov signo, 1
-    inc si
-    mov al, string[si]
-    jmp both
-else_jump:
-    mov signo, 0
-both:
-    sub al, "0"
-    mov dl, string[si+1]
-    cmp dl, ","
-    je write1
-    cmp dl, 13         ; 13 es el retorno de carro
-    je write1
-    sub dl, "0"
-    jmp write2 
+BUCLE:
+    MOV AL, STRING[SI]
+    CMP AL, "-"
+    JNE ELSE_JUMP
+    MOV SIGNO, 1
+    INC SI
+    MOV AL, STRING[SI]
+    JMP BOTH
+ELSE_JUMP:
+    MOV SIGNO, 0
+BOTH:
+    SUB AL, "0"
+    MOV DL, STRING[SI+1]
+    CMP DL, ","
+    JE WRITE1
+    CMP DL, 13         ; 13 es el retorno de carro
+    JE WRITE1
+    SUB DL, "0"
+    JMP WRITE2 
         
-finbucle:              ; Si DI es distinto de 9 es que
-    cmp di, 9          ; no se han almacenado suficientes
-    jne error2         ; datos
-    jmp retorno
-        
+FINBUCLE:              ; Si DI es distinto de 9 es que
+    CMP DI, 9          ; no se han almacenado suficientes
+    JNE ERROR2         ; datos
+    JMP RETORNO
     
-write1:
-    mov ah, 0           ; El numero a escribir esta en AL,
-    cmp signo, 1        ; si es un numero negativo toma el
-    jne j1              ; complemento a 2
-    neg ax
+BUCLEAUX:
+    JMP BUCLE			; Evitamos un salto fuera de rango
+    
+WRITE1:                 ; El numero a escribir esta en AL,
+    CMP SIGNO, 1        ; si es un numero negativo toma el
+    JNE JL_JUMP         ; complemento a 2
+    NEG AL
 
-j1: cmp ax, -16         ; Comprueba rangos y escribe
-    jl error1
-    cmp ax, 15
-    jg error1
-    mov matriz[di], ax
+JL_JUMP: CMP AL, -16         ; Comprueba rangos y escribe
+    JL ERROR1
+    CMP AL, 15
+    JG ERROR1
+    MOV MATRIZ[DI], AL
     
-    inc di              ; Aumenta los indices
-    add si, 2
+    INC DI              ; Aumenta los indices
+    ADD SI, 2
     
-    cmp dl, 13          ; Comprueba si el caracter siguiente 
-    je finbucle         ; es de control (coma o retorno), actua
-    cmp dl, ","         ; formato en caso contrario. Esta en DL 
-    jne error3          ; en consecuencia y devuelve error de
+    CMP DL, 13          ; Comprueba si el caracter siguiente 
+    JE FINBUCLE         ; es de control (coma o retorno), actua
+    CMP DL, ","         ; formato en caso contrario. Esta en DL 
+    JNE ERROR3          ; en consecuencia y devuelve error de
 
-    cmp di, 9
-    jl bucle
-    jmp finbucle
+    CMP DI, 9
+    JL BUCLEAUX
+    JMP FINBUCLE
     
-write2:
-    mov ah, 10          ; El digito alto del numero a escribir esta
-    mov dh, 0           ; en AL y el bajo en DL, si es un numero
-    mul ah              ; negativo toma el complemento a dos
-    add ax, dx
-    cmp signo, 1
-    jne j2
-    neg ax
+WRITE2:
+    MOV AH, 10          ; El digito alto del numero a escribir esta           
+    MUL AH              ; en AL y el bajo en DL, si es un numero
+    ADD AL, DL          ; negativo toma el complemento a dos
+    CMP SIGNO, 1
+    JNE J2
+    NEG AL
     
-j2: cmp ax, -16         ; Comprueba rangos y escribe
-    jl error1
-    cmp ax, 15
-    jg error1
-    mov matriz[di], ax
+J2: CMP AL, -16         ; Comprueba rangos y escribe
+    JL ERROR1
+    CMP AL, 15
+    JG ERROR1
+    MOV MATRIZ[DI], AL
     
-    inc di              ; Aumenta los indices
-    add si, 3
+    INC DI              ; Aumenta los indices
+    ADD SI, 3
     
-    mov dl, string[si-1]   ; Al aumentar 3 estamos posicionados en el
-    cmp dl, 13          ; siguiente digito, por eso -1 para mirar atras.
-    je finbucle         ; Comprueba si el caracter siguiente es de
-    cmp dl, ","         ; control, devuelve error en caso contrario
-    jne error3
+    MOV DL, STRING[SI-1]   ; Al aumentar 3 estamos posicionados en el
+    CMP DL, 13          ; siguiente digito, por eso -1 para mirar atras.
+    JE FINBUCLE         ; Comprueba si el caracter siguiente es de
+    CMP DL, ","         ; control, devuelve error en caso contrario
+    JNE ERROR3
         
-    cmp di, 9
-    jl bucle
-    jmp finbucle 
+    CMP DI, 9
+    JL BUCLEAUX
+    JMP FINBUCLE 
     
-error1:
-    lea dx, perror1
-    mov ah, 9
-    int 21h
-    jmp exit
+ERROR1:
+    LEA DX, PERROR1
+    MOV AH, 9
+    INT 21h
+    JMP EXIT
     
-error2:
-    lea dx, perror2
-    mov ah, 9
-    int 21h
-    jmp exit
+ERROR2:
+    LEA DX, PERROR2
+    MOV AH, 9
+    INT 21h
+    JMP EXIT
     
-error3:
-    lea dx, perror3
-    mov ah, 9
-    int 21h
-    jmp exit
+ERROR3:
+    LEA DX, PERROR3
+    MOV AH, 9
+    INT 21h
+    JMP EXIT
     
-retorno: ; Esto seria el retorno del procedimiento que sea
+RETORNO:
     RET    
     
-exit:
-    mov ah, 4ch ; exit to operating system.
-    int 21h
+EXIT:
+    MOV AH, 4ch ; exit to operating system.
+    INT 21h
 LECTURA ENDP
 
 
@@ -447,13 +445,9 @@ IMPRESION PROC NEAR
 
 	; Guarda los valores de los registros que modifica
 	PUSH AX DX BP CX 
-
-	; BORRA LA PANTALLA
-	MOV AH,9
-	MOV DX, OFFSET CLR_PANT
-	INT 21H
 	
 	; Imprime |A| = 
+	MOV AH,9
 	MOV DX, OFFSET DET_A
 	INT 21H
 	
