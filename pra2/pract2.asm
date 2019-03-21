@@ -6,7 +6,7 @@
 ; 			- Miguel Arconada Manteca									  ;
 ;				(miguel.arconada@estudiante.uam.es)						  ;
 ; 			- Mario García Pascual										  ;
-;				(mario.garciap@estudiante.uam.es)						  ;
+;				(mario.garciapascual@estudiante.uam.es)						  ;
 ;**************************************************************************
 ; Fecha:	21 de marzo de 2019											  ;
 ;**************************************************************************
@@ -64,6 +64,7 @@ DATOS SEGMENT
     PERROR1					db 10, 13, "Error: datos fuera de rango$"
     PERROR2					db 10, 13, "Error: datos insuficientes$"
     PERROR3					db 10, 13, "Error: formato incorrecto$"
+    INICIO                  db "Escribe 'y' si quieres introducir los datos por teclado, cualquier otro caracter si quieres ejecutar el programa con valores por defecto.", 10, 13, "$" 
 	
 DATOS ENDS
 
@@ -151,12 +152,31 @@ INICIO PROC
 ;-------------------------------------------------------------------------- 
 LECTURA PROC NEAR
 	; A partir de aqui empieza la rutina que lee la entrada del usuario	
-	MOV DX, OFFSET CLR_PANT
+	LEA DX, CLR_PANT
 	MOV AH, 9
 	INT 21H
+	
+	; Se pregunta al usuario si quiere introducir datos o probarlo con los datos
+	; por defecto
+	
+	LEA DX, INICIO
+	MOV AH, 9
+	INT 21h
+	
+	MOV AH, 1
+	INT 21h
+	
+	CMP AL, "y"
+	JE INTRODUCIR
+	RET   
     
     ; Da la bienvenida al usuario y le indica
     ; como introducir los datos
+INTRODUCIR:
+    LEA DX, CLR_PANT
+	MOV AH, 9
+	INT 21H
+
     LEA DX, BIENVENIDA
     MOV AH, 9
     INT 21h
@@ -193,17 +213,17 @@ BOTH:
 FINBUCLE:              ; Si DI es distinto de 9 es que
     CMP DI, 9          ; no se han almacenado suficientes
     JNE ERROR2         ; datos
-    JMP RETORNO
+    RET
     
 BUCLEAUX:
     JMP BUCLE			; Evitamos un salto fuera de rango
     
 WRITE1:                 ; El numero a escribir esta en AL,
     CMP SIGNO, 1        ; si es un numero negativo toma el
-    JNE JL_JUMP         ; complemento a 2
+    JNE J1              ; complemento a 2
     NEG AL
 
-JL_JUMP: CMP AL, -16         ; Comprueba rangos y escribe
+J1: CMP AL, -16         ; Comprueba rangos y escribe
     JL ERROR1
     CMP AL, 15
     JG ERROR1
@@ -264,10 +284,7 @@ ERROR3:
     LEA DX, PERROR3
     MOV AH, 9
     INT 21h
-    JMP EXIT
-    
-RETORNO:
-    RET    
+    JMP EXIT   
     
 EXIT:
     MOV AH, 4ch ; exit to operating system.
