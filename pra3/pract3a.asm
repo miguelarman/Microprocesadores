@@ -61,9 +61,10 @@ CONTINUA_SUMA:
 	MOV DL, 10
 	DIV DL					; AH contiene el resto
 	
-	MOV RESTO, AH
-	MOV AX, 10
-	SUB AX , RESTO
+	MOV AL, 10				; Restamos el resto de 10, para ver el digito de control
+	SUB AL , AH				; El digito de control está en AL
+	XOR AH, AH				; El digito ocupa un byte (ponemos AH a cero)
+	
 	
 	
 	; Guarda los valores de los registros para no modificarlo
