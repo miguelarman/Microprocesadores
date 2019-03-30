@@ -1,4 +1,4 @@
-all: pract3.exe testf1.exe
+all: pract3.exe testf1.exe testf3.exe
 
 pract3.exe: pract3.obj pract3a.obj pract3b.obj
 	tcc -v -ml -Lc:\compila\tc\lib pract3.obj pract3a.obj pract3b.obj
@@ -11,10 +11,16 @@ pract3b.obj: pract3b.asm
 
 mod3a.obj: mod3a.asm
 	tasm /zi /ml mod3a,,mod3a
+	
 testf1.exe: testf1.obj mod3a.obj
 	tcc -v -ml -Lc:\compila\tc\lib testf1.obj mod3a.obj
 testf1.obj: testf1.c
 	tcc -c -v -ml -Ic:\compila\tc\include testf1.c
+
+testf3.exe: testf3.obj pract3b.obj
+	tcc -v -ml -Lc:\compila\tc\lib testf3.obj pract3b.obj
+testf3.obj: testf3.c
+	tcc -c -v -ml -Ic:\compila\tc\include testf3.c
 
 clean:
 	del *.obj
