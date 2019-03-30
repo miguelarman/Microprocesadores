@@ -15,10 +15,9 @@ unsigned char computeControlDigit(char* barCodeASCII);
 int main( void ){
 	char barCodeStr[12];
 	unsigned char controlDigit = 0;
-
+	
 	printf("Introduzca nuevo codigo de barras de 12 digitos: ");
 	scanf("%s", &barCodeStr);
-	
 
 	controlDigit = computeControlDigit(barCodeStr);
 

@@ -9,10 +9,10 @@ pract3a.obj: pract3a.asm
 pract3b.obj: pract3b.asm
 	tasm /zi /ml pract3b,,pract3b
 
-pract3a-mod.obj: pract3a-mod.asm
-	tasm /zi /ml pract3a-mod,,pract3a-mod
-testf1.exe: testf1.obj pract3a-mod.obj
-	tcc -v -ml -Lc:\compila\tc\lib testf1.obj pract3a-mod.obj
+mod3a.obj: mod3a.asm
+	tasm /zi /ml mod3a,,mod3a
+testf1.exe: testf1.obj mod3a.obj
+	tcc -v -ml -Lc:\compila\tc\lib testf1.obj mod3a.obj
 testf1.obj: testf1.c
 	tcc -c -v -ml -Ic:\compila\tc\include testf1.c
 
