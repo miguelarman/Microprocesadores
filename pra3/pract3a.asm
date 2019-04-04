@@ -1,7 +1,17 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 			SBM 2016. Practica 3 - Primeras dos funciones	;
-;   Pareja													;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;**************************************************************************
+;               SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  ;
+;                    PRÁCTICA 3: Diseño de programas					  ;
+;                       utilizando C y ensamblador					  	  ;
+;**************************************************************************
+; Autores:																  ;
+; 			- Miguel Arconada Manteca									  ;
+;				(miguel.arconada@estudiante.uam.es)						  ;
+; 			- Mario García Pascual										  ;
+;				(mario.garciapascual@estudiante.uam.es)					  ;
+;**************************************************************************
+; Fecha:	4 de abril de 2019											  ;
+;**************************************************************************
+
 DGROUP GROUP _DATA, _BSS				;; Se agrupan segmentos de datos en uno
 
 _DATA SEGMENT WORD PUBLIC 'DATA' 		;; Segmento de datos DATA público
@@ -15,6 +25,16 @@ _BSS ENDS
 _TEXT SEGMENT BYTE PUBLIC 'CODE' 		;; Definición del segmento de código
 ASSUME CS:_TEXT, DS:DGROUP, SS:DGROUP
 
+
+;;;;;
+;
+; computeControlDigit
+;
+; Esta funcion realiza el computo automatico del digito de control del codigo
+; de barras. Recibe un puntero a la cadena completa de caracteres ASCII y 
+; retorna el valor decimal del digito de control.
+;
+;;;;;
 
 PUBLIC _computeControlDigit
 _computeControlDigit PROC FAR
@@ -90,83 +110,101 @@ BL_ES_DIEZ:
 
 _computeControlDigit ENDP
 
-
+;;;;;
+;
+; decodeBarCode
+;
+; Esta funcion lee los 13 caracteres del codigo de barras y obtiene cada campo almacenado
+; en los parametros de entrada-salida correspondientes al codigo de pais, el codigo de
+; empresa, el codigo de producto y el digito de control.
+;
+;;;;;
 
 PUBLIC _decodeBarCode
-_decodeBarCode proc FAR
-    push bp
-    mov bp, sp
-    push bx cx di ax es ds
+_decodeBarCode PROC FAR
+    PUSH BP
+    MOV BP, SP
+    PUSH BX CX DI AX ES DS  ; Metemos en la pila todos los registros que usamos
     
-    add bp, 2
+    ADD BP, 2				; Con esto nos saltamos el primer push de BP
     
-    les bx, [bp+4]
+    LES BX, [BP+4]			; Guardamos en ES el segmento de la cadena de caracteres
+    						; y en BX el offset 
+    ; COUNTRYCODE
+    MOV CX, 3
+    CALL CONVERTIR_A_LONG
+    LDS DI, [BP+8]
+    MOV DS:[DI], AX
+    ADD BX, 3
     
-    ; countryCode
-    mov cx, 3
-    call convertir_a_long
-    lds di, [bp+8]
-    mov ds:[di], ax
-    add bx, 3
+    ; COMPANYCODE			; Los demas campos son iguales, salvo tamaño de lo que se lee y se guarda
+    MOV CX, 4				; Se guarda en CX el numero de caracteres que hay que leer
+    CALL CONVERTIR_A_LONG 	; Se guarda en DX:AX el entero largo correspondiente al numero leido
+    LDS DI, [BP+12]			; Se guarda en DS:[DI] la direccion donde hay que guardar el numero
+    MOV DS:[DI], AX 		; Se guarda el numero en la direccion de memoria
+    ADD BX, 4 				; Se incrementa el puntero de la cadena tanto como caracteres leidos
     
-    ; companyCode
-    mov cx, 4
-    call convertir_a_long
-    lds di, [bp+12]
-    mov ds:[di], ax
-    add bx, 4
+    ; PRODUCTCODE
+    MOV CX, 5
+    CALL CONVERTIR_A_LONG
+    LDS DI, [BP+16]
+    MOV DS:[DI], AX
+    MOV DS:[DI+2], DX
+    ADD BX, 5
     
-    ; productCode
-    mov cx, 5
-    call convertir_a_long
-    lds di, [bp+16]
-    mov ds:[di], ax
-    mov ds:[di+2], dx
-    add bx, 5
+    ; CONTROLDIGIT
+    MOV CX, 1
+    CALL CONVERTIR_A_LONG
+    LDS DI, [BP+20]
+    MOV DS:[DI], AL
     
-    ; controlDigit
-    mov cx, 1
-    call convertir_a_long
-    lds di, [bp+20]
-    mov ds:[di], al
+    POP DS ES AX DI CX BX
+    POP BP
+    RET
     
-    
-retorno_f2:	
-    pop ds es ax di cx bx
-    pop bp
-    ret
-    
-_decodeBarCode endp
+_DECODEBARCODE 
 
-convertir_a_long proc NEAR
-    push si di
-    
-    mov ax, 0
-    mov dx, 0
-    mov si, 0    
-    
-bucle:
-    mov di, 10
-    mul di
-    
-    mov di, es:[bx][si] 
-    and di, 00ffh
-    sub di, "0"
-    add ax, di
-    
-    jnc sin_acarreo
-    inc dx
+;;;;;
+;
+; convertir_a_long
+;
+; Esta funcion auxiliar recibe en CX el numero de caracteres que se
+; tienen que leer de ES:[BX] para convertirlos al valor numérico
+; que representan. Por la manera que esta implementado, no se reco-
+; mienda utilizarla con más de 5 caracteres por posibles problemas
+; con el acarreo
+;
+;;;;;
 
-sin_acarreo:    
-    inc si
-    cmp si, cx
-    jl bucle
+CONVERTIR_A_LONG PROC NEAR
+    PUSH SI DI
     
-    pop di si
+    MOV AX, 0
+    MOV DX, 0
+    MOV SI, 0    
     
-    ret
+BUCLE:
+    MOV DI, 10
+    MUL DI
     
-convertir_a_long endp
+    MOV DI, ES:[BX][SI]		; Indexamos con SI
+    AND DI, 00FFH
+    SUB DI, "0"				; Convertimos a digito numerico
+    ADD AX, DI
+    
+    JNC SIN_ACARREO			; Si ha habido un problema de acarreo, incrementamos 1
+    INC DX					; a DX. Esto funciona porque esto solo puede pasar 
+    						; en la quinta interacion, que en el caso de ocurrir
+SIN_ACARREO:    			; sera la ultima, y por tanto no le da tiempo a la
+    INC SI 					; multiplicacion AX * 10 --> DX:AX a sobreescribir 
+    CMP SI, CX				; DX
+    JL BUCLE 				; Si el indice es menor igual que CX, continuamos
+    
+    POP DI SI
+    
+    RET
+    
+CONVERTIR_A_LONG ENDP
 
 
 _TEXT ENDS
