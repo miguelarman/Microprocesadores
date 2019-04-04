@@ -172,7 +172,7 @@ _decodeBarCode PROC FAR
     POP BP
     RET
     
-_decodeBarCode ENDP
+_DECODEBARCODE 
 
 ;;;;;
 ;
