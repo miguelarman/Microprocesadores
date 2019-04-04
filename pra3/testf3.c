@@ -14,9 +14,11 @@ void createBarCode(int countryCode, unsigned int companyCode, unsigned long prod
 
 int main( void ){
 	char barCodeStr[14] = {0};
-	unsigned int countryCode = 4333;
-	unsigned int companyCode = 54444;
-	unsigned long productCode = 655555;
+	
+	// Inicializados con un dígito de más para ver si hay error
+	unsigned int countryCode = 3333;
+	unsigned int companyCode = 44444;
+	unsigned long productCode = 555555;
 	unsigned char controlDigit = 21;
 	
 	createBarCode(countryCode, companyCode, productCode, controlDigit, barCodeStr);

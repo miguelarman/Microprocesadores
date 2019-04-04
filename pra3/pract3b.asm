@@ -100,8 +100,8 @@ BUCLE_COMPANY_CODE:
 	
 	XOR DX, DX					; Preparamos DX para la siguiente iteración, ya que el cociente está en AX
 
-	INC DI						; Si ya ha escrito cinco dígitos termina el bucle
-	CMP DI, 5
+	INC DI						; Si ya ha escrito cuatro dígitos termina el bucle
+	CMP DI, 4
 	JNE BUCLE_COMPANY_CODE
 	
 	
@@ -127,8 +127,8 @@ BUCLE_COUNTRY_CODE:
 	
 	XOR DX, DX					; Preparamos DX para la siguiente iteración, ya que el cociente está en AX
 
-	INC DI						; Si ya ha escrito cinco dígitos termina el bucle
-	CMP DI, 5
+	INC DI						; Si ya ha escrito tres dígitos termina el bucle
+	CMP DI, 3
 	JNE BUCLE_COUNTRY_CODE
 	
 	
