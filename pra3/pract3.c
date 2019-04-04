@@ -34,8 +34,9 @@ int main( void ){
 
 	printf("Introduzca nuevo codigo de barras de 13 digitos: ");
 	scanf("%s", &barCodeStr);
+	printf("%s\n", barCodeStr);
 
-		
+	
 	decodeBarCode(barCodeStr, &countryCode, &companyCode, &productCode, &controlDigit);
 	printf("Codigo de barras leido:\n");
 	printf("- Codigo de Pais - %u -\n",countryCode);
