@@ -1,6 +1,9 @@
 _decodeBarCode proc FAR:
-    ;push bp
+    push bp
     mov bp, sp
+    push bx, cx, di, ax
+    
+    add bp, 2
     
     les bx, [bp+4]
     
@@ -21,22 +24,27 @@ _decodeBarCode proc FAR:
     ; productCode
     mov cx, 5
     call convertir_a_long
-    lds di, [bp+12]
+    lds di, [bp+16]
     mov ds:[di], ax
     mov ds:[di+1], dx
     add bx, 5
     
     ; controlDigit
-    ; falta esto y hacers pushs y pops
+    mov cx, 1
+    call convertir_a_long
+    lds di, [bp+20]
+    mov ds:[di], ax
     
-    ;pop bp
+     
+    pop ax, di, cx, bx
+    pop bp
     
     ret
     
 _decodeBarCode endp
 
 convertir_a_long proc FAR:
-    ;push ch, di
+    push si, di
     
     mov ax, 0
     mov dx, 0
@@ -59,7 +67,7 @@ sin_acarreo:
     cmp si, cx
     jl bucle
     
-    ;pop di, ch
+    pop di, si
     
     ret
     
