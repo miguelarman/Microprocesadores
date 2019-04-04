@@ -26,7 +26,7 @@ int main(void) {
 	char barCodeStr2[14] = "1231234999990";
 	unsigned char barCodeDigits[13];
 	unsigned int  countryCode, companyCode;
-	unsigned long productCode;
+	unsigned long productCode;	
 	unsigned char controlDigitCheck, controlDigit;
 
 	decodeBarCode(barCodeStr1, &countryCode, &companyCode, &productCode, &controlDigit);
@@ -35,6 +35,8 @@ int main(void) {
 	printf("- Codigo de Empresa - %u -\n",companyCode);
 	printf("- Codigo de Producto - %lu -\n",productCode);
 	printf("- Codigo de Control - %u -\n",controlDigit);
+	
+	printf("Analiza uno\n");
 
 	decodeBarCode(barCodeStr2, &countryCode, &companyCode, &productCode, &controlDigit);
 	printf("Codigo de barras leido:\n");
