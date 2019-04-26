@@ -21,13 +21,13 @@ matriz				db	9h, "234567", 0Ah
 					db	"$"
 				
 pmensaje			db	"2- El mensaje a cifrar es:", 0Ah, 9h, "$"
-mensaje				db	"Mensaje predefinido$"
+mensaje				db	"AllCatsAreBeautyful$"
 
 pmensaje_cifrado	db	0Ah, 0Ah, "3- El mensaje cifrado es:", 0Ah, 9h, "$"
+
 mensaje_cifrado		db	32 dup ("C"), "$"
 
 pmensaje_descifrado	db	0Ah, 0Ah, "4- El mensaje descifrado es:", 0Ah, 9h, "$"
-mensaje_descifrado	db	32 dup ("D"), "$"
 DATOS ENDS
 
 ;**************************************************************************
@@ -83,9 +83,9 @@ INICIO PROC
 	int 21h
 	
 	; TODO Codifica y guarda en mensaje_cifrado
-		mov ah, 9
-		mov dx, OFFSET mensaje_cifrado
-		int 21h
+;		mov ah, 9
+;		mov dx, OFFSET mensaje_cifrado
+;		int 21h
 	
 	; Descodifica el mensaje obtenido
 	; y lo muestra por pantalla
@@ -95,9 +95,9 @@ INICIO PROC
 	int 21h
 	
 	; TODO Decodifica el mensaje
-		mov ah, 9
-		mov dx, OFFSET mensaje_descifrado
-		int 21h
+;		mov ah, 9
+;		mov dx, OFFSET mensaje_descifrado
+;		int 21h
 	
 	; FIN DEL PROGRAMA
 	MOV AX, 4C00H
