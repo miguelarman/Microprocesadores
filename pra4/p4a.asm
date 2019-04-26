@@ -5,7 +5,12 @@ codigo SEGMENT
 inicio: jmp lee_argumentos
 
 ; Variables globales
-polibio									db	3, 4, 5, 6, 7, 8, 9, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0, 1, 2
+polibio									db	"234567"
+										db	"23ABCD"
+										db	"EFGHIJ"
+										db	"KLMNOP"
+										db	"QRSTUV"
+										db	"WXYZ01"
 cadena_aux								db	32 dup (?)
 mensaje_informacion_general				db	"Informacion acerca de este programa:", 0Ah
 										db	9h, "Llamar a esta funcion con el argumento /I para instalar el driver", 0Ah
