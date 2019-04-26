@@ -42,6 +42,8 @@ rsi PROC FAR
 	pop ax
 	iret
 	
+final_programa:
+	
 lee_argumentos:
 
 	; Lee del PSP el tamaño en bytes de los parámetros del programa
@@ -113,7 +115,7 @@ instalador:
 	mov es:[57h*4+2], bx
 	sti
 	
-	mov dx, OFFSET instalador
+	mov dx, OFFSET final_programa
 	int 27h	; Acaba y deja residente
 			; PSP, variables y rutina rsi.
 	
