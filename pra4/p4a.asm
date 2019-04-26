@@ -254,6 +254,7 @@ limpia_pantalla PROC
 limpia_pantalla ENDP
 
 rutina_mensaje_instalado PROC
+	push ax
 	call comprueba_instalado
 	
 	cmp ax, 1
@@ -265,6 +266,7 @@ rutina_mensaje_instalado PROC
 	mov dx, OFFSET mensaje_instalado
 	int 21h
 	
+	pop ax
 	ret
 	
 	imprime_mensaje_no_intalado:
@@ -272,12 +274,22 @@ rutina_mensaje_instalado PROC
 	mov dx, OFFSET mensaje_no_instalado
 	int 21h
 	
+	pop ax
 	ret
 rutina_mensaje_instalado ENDP
 
 comprueba_instalado PROC
+	push bx ds
+	
+	mov ax, 0
+	mov es, ax
+	
+	les bx, es:[57h*4]
+	mov bx, es:[bx-2]
+	
 	mov ax, firma
-	cmp ax, es:[si-2]
+	cmp ax, bx
+	
 	je iguales
 	jmp distintos
 
@@ -292,6 +304,7 @@ comprueba_instalado PROC
 	jmp final_comprueba_instalado
 	
 	final_comprueba_instalado:
+	pop ds bx
 	ret
 	
 comprueba_instalado ENDP
