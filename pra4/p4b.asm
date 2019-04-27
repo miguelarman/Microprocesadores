@@ -2,7 +2,7 @@
 ; SBM 2019. ESTRUCTURA BÁSICA DE UN PROGRAMA EN ENSAMBLADOR
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE DATOS
-DATOS SEGMENT
+datos SEGMENT
 clear_pantalla		db	1BH,"[2","J$"
 
 mensaje_inicial		db	"Informacion acerca de este programa:", 0Ah
@@ -28,7 +28,12 @@ pmensaje_cifrado	db	0Ah, 0Ah, "3- El mensaje cifrado es:", 0Ah, 9h, "$"
 mensaje_cifrado		db	32 dup ("C"), "$"
 
 pmensaje_descifrado	db	0Ah, 0Ah, "4- El mensaje descifrado es:", 0Ah, 9h, "$"
-DATOS ENDS
+
+pmensaje_final		db	0Ah, 0Ah, "Si el mensaje descifrado es igual al mensaje inicial", 0Ah
+					db	"entonces se puede comprobar que este programa funciona", 0Ah
+					db	"correctamente"
+					db	"$"
+datos ENDS
 
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE PILA
@@ -44,11 +49,11 @@ EXTRA ENDS
 
 ; DEFINICION DEL SEGMENTO DE CODIGO
 CODE SEGMENT
-	ASSUME CS: CODE, DS: DATOS, ES: EXTRA
+	ASSUME CS: CODE, DS: datos, ES: EXTRA
 
 ; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
 INICIO PROC
-	MOV AX, DATOS
+	MOV AX, datos
 	MOV DS, AX
 	
 	; COMIENZO DEL PROGRAMA
@@ -82,10 +87,13 @@ INICIO PROC
 	mov dx, OFFSET pmensaje_cifrado
 	int 21h
 	
-	; TODO Codifica y guarda en mensaje_cifrado
-;		mov ah, 9
-;		mov dx, OFFSET mensaje_cifrado
-;		int 21h
+	; Codifica y guarda en mensaje_cifrado
+	;con que el ds apunte a los datos y metas en dx el offset valdra
+	mov ax, datos
+	mov ds, ax
+	mov dx, OFFSET mensaje
+	mov ah, 10h
+	int 57h
 	
 	; Descodifica el mensaje obtenido
 	; y lo muestra por pantalla
@@ -94,10 +102,17 @@ INICIO PROC
 	mov dx, OFFSET pmensaje_descifrado
 	int 21h
 	
-	; TODO Decodifica el mensaje
-;		mov ah, 9
-;		mov dx, OFFSET mensaje_descifrado
-;		int 21h
+	; Decodifica el mensaje
+	mov ax, datos
+	mov ds, ax
+	mov dx, OFFSET mensaje_cifrado
+	mov ah, 11h
+	int 57h
+	
+	; Imprime mensaje final
+	mov ah, 9
+	mov dx, OFFSET pmensaje_final
+	int 21h
 	
 	; FIN DEL PROGRAMA
 	MOV AX, 4C00H
