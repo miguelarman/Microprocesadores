@@ -21,11 +21,11 @@ matriz				db	9h, "234567", 0Ah
 					db	"$"
 				
 pmensaje			db	"2- El mensaje a cifrar es:", 0Ah, 9h, "$"
-mensaje				db	"AllCatsAreBeautyful$"
+mensaje				db	"ALLCATSAREBEAUTIFUL$"
 
 pmensaje_cifrado	db	0Ah, 0Ah, "3- El mensaje cifrado es:", 0Ah, 9h, "$"
 
-mensaje_cifrado		db	32 dup ("C"), "$"
+mensaje_cifrado		db	"23424225235453235231243123555435325542$"
 
 pmensaje_descifrado	db	0Ah, 0Ah, "4- El mensaje descifrado es:", 0Ah, 9h, "$"
 

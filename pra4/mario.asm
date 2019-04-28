@@ -1,6 +1,6 @@
 ; multi-segment executable file template.
 
-data segment
+datos SEGMENT
     hola        db "AB"
     table_ctop  db 48 dup(?,?)
                 db "6566"
@@ -25,24 +25,26 @@ data segment
                 db " AH=11h para decodificar$" 
     in_str      db "HOLAQUETAL03$"
     in_str2     db "344542235155315423426512$"
+	str_acab	db "ALLCATSAREBEAUTIFUL$"
     
     
     pkey db "press any key...$"
-ends
+datos ENDS
 
-stack segment
-    dw   128  dup(0)
-ends
+PILA SEGMENT STACK "STACK"
+DB 40H DUP (0) ;ejemplo de inicialización, 64 bytes inicializados a 0
+PILA ENDS
 
 code segment
+ASSUME CS: code, DS: datos
 start:
 ; set segment registers:
-    mov ax, data
+    mov ax, datos
     mov ds, ax
     mov es, ax
     
-    lea dx, in_str2
-    mov ah, 12h
+    lea dx, str_acab
+    mov ah, 10h
     
     ;; desde aqui es lo mio
     
@@ -68,7 +70,7 @@ opt_decode:
 salir:    
     mov ax, 4c00h ; exit to operating system.
     int 21h    
-ends
+
 ;;;;;;
 ;;
 ;; Esta funcion recibe en DS:DX una cadena de
@@ -76,12 +78,7 @@ ends
 ;; prime por pantalla.
 ;;
 encode_polibio proc near    
-    push ax
-    push bx
-    push dx
-    push si
-    push di
-    push ds
+    push ax bx dx si di ds
     
     mov bx, dx
     
@@ -106,12 +103,7 @@ end_b1:
     mov ah, 9
     int 21h
     
-    pop ds
-    pop di
-    pop si
-    pop dx
-    pop bx
-    pop ax
+    pop ds di si dx bx ax
     
     ret    
 encode_polibio endp
@@ -125,17 +117,15 @@ encode_polibio endp
 ;; se codifica en "23" -> DL="2", DH="3" 
 ;;    
 enc_char proc near
-    push ax
-    push si
+    push ax si
     
     mov ah, 2
     mul ah
     mov si, ax
     mov dx, word ptr table_ctop[si]
     
-    pop si
-    pop ax
-     
+    pop si ax
+    
     ret 
 enc_char endp
 
@@ -146,12 +136,7 @@ enc_char endp
 ;; difica y la imprime por pantalla.
 ;;
 decode_polibio proc near
-    push ax
-    push bx
-    push dx
-    push si
-    push di
-    push ds
+    push ax bx dx si di ds
     
     mov bx, dx
     
@@ -174,12 +159,7 @@ end_b2:
     mov ah, 9
     int 21h
     
-    pop ds
-    pop di
-    pop si
-    pop dx
-    pop bx
-    pop ax
+    pop ds di si dx bx ax
     
     ret
 decode_polibio endp
@@ -194,9 +174,7 @@ decode_polibio endp
 ;; devuelve DL="A"
 ;;
 dec_char proc near
-    push ax
-    push bx
-    push si
+    push ax bx si
     
     mov bl, ah
     
@@ -212,14 +190,12 @@ dec_char proc near
     mov si, ax
     mov dl, table_ptoc[bx][si]
     
-    pop si
-    pop bx
-    pop ax
+    pop si bx ax
     
     ret     
 dec_char endp
 
 
 
-
+code ends
 end start ; set entry point and stop the assembler.
