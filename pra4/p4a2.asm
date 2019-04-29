@@ -46,14 +46,16 @@ clear_pantalla							db	1BH,"[2","J$"
 mensaje_instalado						db	0Ah,"El driver esta instalado$"
 mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 
-firma									dw	0ACABh
-sec_cnt db 0
+sec_cnt									db	0
+empty									db	"$"
+firma									dw	0ABACh
+
 
 
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
 	; Salva registros modificados
-	push ax
+	push ax si ds dx
 	
 	; Instrucciones de la rutina
 	cmp ah, 10h
@@ -94,7 +96,15 @@ b0:
     
     mov sec_cnt, 0
 delay:
-    cmp sec_cnt, 18
+	;inc sec_cnt
+	push dx
+    MOV AX, CS
+    MOV DS, AX
+    LEA DX, empty
+    MOV AH, 9
+    INT 21H
+	pop dx
+	cmp sec_cnt, 18
     jb delay
     
     mov ah, 2
@@ -104,7 +114,7 @@ delay:
     
 salir:
 	; Recupera registros modificados
-	pop ax
+	pop dx ds si ax
 	iret
 	
 ;;;;;;
@@ -229,6 +239,25 @@ dec_char proc near
     ret     
 dec_char endp
 
+rutina_periodica PROC
+	; Guarda los registros que modifica
+	push ax ds
+	; Instrucciones del programa
+	mov ax, cs
+	mov ds, ax
+	
+	inc sec_cnt
+	
+	;lea dx, mensaje_debug
+	;mov ah, 9h
+	;int 21h
+	
+	
+	; Recupera los registros que modifica
+	pop ds ax
+	iret
+rutina_periodica ENDP
+
 lee_argumentos:
 
 	; Lee del PSP el tamaño en bytes de los parámetros del programa
@@ -282,6 +311,17 @@ desinstalador:
 	jmp fin_ejecucion_normal
 	
 instalador:
+	call rutina_instalador
+	
+fin_ejecucion_normal:
+	mov ax, 4C00h
+	int 21h
+rsi ENDP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                RUTINAS AUXILIARES               ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+rutina_instalador PROC
 	; Limpia la pantalla
 	call limpia_pantalla
 	
@@ -290,6 +330,7 @@ instalador:
 	mov dx, OFFSET mensaje_informacion_instalador
 	int 21h
 
+	; Instala el driver para la interrupcion 57h
 	mov ax, 0
 	mov es, ax
 	mov ax, OFFSET rsi
@@ -300,19 +341,22 @@ instalador:
 	mov es:[57h*4+2], bx
 	sti
 	
+	; Instala el driver para la interrupcion periodica (1Ch)
+	mov ax, 0
+	mov es, ax
+	mov ax, OFFSET rutina_periodica
+	mov bx, cs
+	
+	cli
+	mov es:[1Ch*4], ax
+	mov es:[1Ch*4+2], bx
+	sti
+	
 	;mov dx, OFFSET final_programa
 	mov dx, OFFSET lee_argumentos
 	int 27h	; Acaba y deja residente
 			; PSP, variables y rutina rsi.
-	
-fin_ejecucion_normal:
-	mov ax, 4C00h
-	int 21h
-rsi ENDP
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                RUTINAS AUXILIARES               ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+rutina_instalador ENDP
 
 rutina_informacion PROC
 	push ax dx

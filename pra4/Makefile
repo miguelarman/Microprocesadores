@@ -1,9 +1,14 @@
-all: p4a.com p4b.exe p4c.exe
+all: p4a.com p4a2.com p4b.exe p4c.exe
 	
 p4a.com: p4a.obj
 	tlink /v /t p4a	
 p4a.obj: p4a.asm
 	tasm /zi /ml p4a,,p4a
+	
+p4a2.com: p4a2.obj
+	tlink /v /t p4a2	
+p4a2.obj: p4a2.asm
+	tasm /zi /ml p4a2,,p4a2
 
 p4b.exe: p4b.obj
 	tlink /v p4b	
