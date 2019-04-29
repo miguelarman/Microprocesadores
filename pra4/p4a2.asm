@@ -1,4 +1,4 @@
-codigo SEGMENT
+﻿codigo SEGMENT
 	ASSUME cs : codigo
 	ORG 256
 	
@@ -69,11 +69,11 @@ rsi PROC FAR
     
 opt_encode:
     call encode_polibio
-    jmp imprimir
+    jmp imprimir_nuevo
     
 opt_decode:
     call decode_polibio
-    jmp imprimir
+    jmp imprimir_nuevo
     
 imprimir:
     mov ax, cs
@@ -81,6 +81,7 @@ imprimir:
     lea dx, out_str
     mov ah, 9
     int 21h
+    jmp salir
     
 imprimir_nuevo:
     mov si, 0
