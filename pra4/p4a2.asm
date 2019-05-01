@@ -49,6 +49,11 @@ mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 
 sec_cnt									db	0
 empty									db	"$"
+
+segmento_anterior_1Ch					dw	?
+offset_anterior_1Ch						dw	?
+segmento_anterior_57h					dw	?
+offset_anterior_57h						dw	?
 firma									dw	0ABACh
 
 
@@ -340,7 +345,11 @@ rutina_instalador PROC
 	mov ax, OFFSET rsi
 	mov bx, cs
 	
+	mov cx, es:[57h*4]
+	mov offset_anterior_57h, cx
 	mov es:[57h*4], ax
+	mov cx, es:[57h*4+2]
+	mov segmento_anterior_57h, cx
 	mov es:[57h*4+2], bx
 	
 	; Instala el driver para la interrupcion periodica (1Ch)
@@ -349,7 +358,11 @@ rutina_instalador PROC
 	mov ax, OFFSET rutina_periodica
 	mov bx, cs
 	
+	mov cx, es:[1Ch*4]
+	mov offset_anterior_1Ch, cx
 	mov es:[1Ch*4], ax
+	mov cx, es:[1Ch*4+2]
+	mov segmento_anterior_1Ch, cx
 	mov es:[1Ch*4+2], bx
 	
 	; Desbloquea las interrupciones
@@ -464,9 +477,11 @@ rutina_desinstalador_57h PROC
 	mov es, bx
 	int 21h					; Libera segmento de variables de entorno de RSI
 	
-	; Pone a cero vector de interrupción 57h
+	; Reestablece el vector de interrupción 57h
 	cli
-	mov ds:[57h*4], cx 		; cx = 0
+	mov cx, offset_anterior_57h
+	mov ds:[57h*4], cx
+	mov cx, segmento_anterior_57h
 	mov ds:[57h*4+2], cx
 	sti
 	
@@ -483,7 +498,7 @@ rutina_desinstalador_57h ENDP
 
 rutina_desinstalador_1Ch PROC
 	push ax bx cx dx ds es
-
+	
 	; Imprime el mensaje de informacion del desinstalador
 	mov ah, 9
 	mov dx, OFFSET mensaje_informacion_desinstalador_1Ch
@@ -514,9 +529,11 @@ rutina_desinstalador_1Ch PROC
 	mov es, bx
 	int 21h					; Libera segmento de variables de entorno de RSI
 	
-	; Pone a cero vector de interrupción 57h
+	; Reestablece el vector de interrupción 1Ch
 	cli
-	mov ds:[1Ch*4], cx 		; cx = 0
+	mov cx, offset_anterior_1Ch
+	mov ds:[1Ch*4], cx
+	mov cx, segmento_anterior_1Ch
 	mov ds:[1Ch*4+2], cx
 	sti
 	
@@ -594,7 +611,7 @@ rutina_mensaje_instalado_1Ch PROC
 rutina_mensaje_instalado_1Ch ENDP
 
 comprueba_instalado_57h PROC
-	push bx ds
+	push bx es ds
 	
 	mov ax, 0
 	mov es, ax
@@ -617,13 +634,13 @@ comprueba_instalado_57h PROC
 	jmp final_comprueba_instalado
 	
 	final_comprueba_instalado:
-	pop ds bx
+	pop ds es bx
 	ret
 	
 comprueba_instalado_57h ENDP
 
 comprueba_instalado_1Ch PROC
-	push bx ds
+	push bx es ds
 	
 	mov ax, 0
 	mov es, ax
@@ -646,7 +663,7 @@ comprueba_instalado_1Ch PROC
 	jmp final_comprueba_instalado_1Ch
 	
 	final_comprueba_instalado_1Ch:
-	pop ds bx
+	pop ds es bx
 	ret
 	
 comprueba_instalado_1Ch ENDP

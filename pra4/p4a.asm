@@ -46,6 +46,8 @@ clear_pantalla							db	1BH,"[2","J$"
 mensaje_instalado						db	0Ah,"El driver esta instalado$"
 mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 
+segmento_anterior_57h					dw	?
+offset_anterior_57h						dw	?
 firma									dw	0ACABh
 
 ; Rutina de servicio a la interrupción
@@ -275,7 +277,11 @@ instalador:
 	mov bx, cs
 	
 	cli
+	mov cx, es:[57h*4]
+	mov offset_anterior_57h, cx
 	mov es:[57h*4], ax
+	mov cx, es:[57h*4+2]
+	mov segmento_anterior_57h, cx
 	mov es:[57h*4+2], bx
 	sti
 	
@@ -369,7 +375,6 @@ rutina_desinstalador PROC
 	int 21h
 	
 	; Comprueba el vector INT
-	mov bx, ds ; Guardamos ds para poder imprimir
 	mov cx, 0
 	mov ds, cx
 	cmp ds:[57h*4], WORD PTR 0
@@ -395,14 +400,16 @@ rutina_desinstalador PROC
 	
 	; Pone a cero vector de interrupción 57h
 	cli
-	mov ds:[57h*4], cx 		; cx = 0
+	mov cx, offset_anterior_57h
+	mov ds:[57h*4], cx
+	mov cx, segmento_anterior_57h
 	mov ds:[57h*4+2], cx
 	sti
 	
 	jmp final_desinstalador
 	
 	no_instalado_desinstalar:
-	mov ds, bx
+	pop ds
 	call rutina_mensaje_instalado
 	
 	final_desinstalador:
@@ -448,7 +455,7 @@ rutina_mensaje_instalado PROC
 rutina_mensaje_instalado ENDP
 
 comprueba_instalado PROC
-	push bx ds
+	push bx es ds
 	
 	mov ax, 0
 	mov es, ax
@@ -458,7 +465,7 @@ comprueba_instalado PROC
 	
 	mov ax, firma
 	cmp ax, bx
-	
+		
 	je iguales
 	jmp distintos
 
@@ -473,7 +480,7 @@ comprueba_instalado PROC
 	jmp final_comprueba_instalado
 	
 	final_comprueba_instalado:
-	pop ds bx
+	pop ds es bx
 	ret
 	
 comprueba_instalado ENDP
