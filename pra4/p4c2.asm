@@ -1,14 +1,14 @@
 ; multi-segment executable file template.
 
 data segment
-    crnl        db 10,13,"$"
+    crnl        db	10,13,"$"
     buff        db  26        ; numero maximo de caracteres
     nchars      db  ?         ; caracteres introducidos por el usuario
-    in_str      db 26 dup(?)  ; string introducido por el usuario
-    cod         db "cod$"
-    decod       db "decod$"
-    quit        db "quit$"
-    mode        db 10h        ; el modo predeterminado es cod
+    in_str      db	26 dup(?)  ; string introducido por el usuario
+    cod         db	"cod$"
+    decod       db	"decod$"
+    quit        db	"quit$"
+    mode        db	10h        ; el modo predeterminado es cod
 ends
 
 stack segment

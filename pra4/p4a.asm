@@ -358,7 +358,7 @@ rutina_error_parametros_sin_barra PROC
 rutina_error_parametros_sin_barra ENDP
 
 rutina_desinstalador PROC
-	push ax cx dx
+	push ax bx cx dx
 
 	; Limpia la pantalla
 	call limpia_pantalla
@@ -369,6 +369,9 @@ rutina_desinstalador PROC
 	int 21h
 	
 	; Comprueba el vector INT
+	mov bx, ds ; Guardamos ds para poder imprimir
+	mov cx, 0
+	mov ds, cx
 	cmp ds:[57h*4], WORD PTR 0
 	jz no_instalado_desinstalar
 	cmp ds:[57h*4+2], WORD PTR 0
@@ -399,10 +402,11 @@ rutina_desinstalador PROC
 	jmp final_desinstalador
 	
 	no_instalado_desinstalar:
+	mov ds, bx
 	call rutina_mensaje_instalado
 	
 	final_desinstalador:
-	pop dx cx ax
+	pop dx cx bx ax
 	ret
 rutina_desinstalador ENDP
 

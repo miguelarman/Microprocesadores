@@ -54,6 +54,8 @@ firma									dw	0ABACh
 
 ; Rutina de servicio a la interrupción
 rsi PROC FAR
+	sti
+	
 	; Salva registros modificados
 	push ax si ds dx
 	
@@ -97,13 +99,6 @@ b0:
     mov sec_cnt, 0
 delay:
 	;inc sec_cnt
-	push dx
-    MOV AX, CS
-    MOV DS, AX
-    LEA DX, empty
-    MOV AH, 9
-    INT 21H
-	pop dx
 	cmp sec_cnt, 18
     jb delay
     
@@ -307,7 +302,8 @@ error_parametros_sin_barra:
 	jmp fin_ejecucion_normal
 
 desinstalador:
-	call rutina_desinstalador
+	call rutina_desinstalador_57h
+	call rutina_desinstalador_1Ch
 	jmp fin_ejecucion_normal
 	
 instalador:
@@ -422,8 +418,8 @@ rutina_error_parametros_sin_barra PROC
 	ret
 rutina_error_parametros_sin_barra ENDP
 
-rutina_desinstalador PROC
-	push ax cx dx
+rutina_desinstalador_57h PROC
+	push ax bx cx dx
 
 	; Limpia la pantalla
 	call limpia_pantalla
@@ -434,6 +430,9 @@ rutina_desinstalador PROC
 	int 21h
 	
 	; Comprueba el vector INT
+	mov bx, ds ; Guardamos ds para poder imprimir
+	mov cx, 0
+	mov ds, cx
 	cmp ds:[57h*4], WORD PTR 0
 	jz no_instalado_desinstalar
 	cmp ds:[57h*4+2], WORD PTR 0
@@ -464,12 +463,66 @@ rutina_desinstalador PROC
 	jmp final_desinstalador
 	
 	no_instalado_desinstalar:
+	mov ds, bx
 	call rutina_mensaje_instalado
 	
 	final_desinstalador:
-	pop dx cx ax
+	pop dx cx bx ax
 	ret
-rutina_desinstalador ENDP
+rutina_desinstalador_57h ENDP
+
+rutina_desinstalador_1Ch PROC
+	push ax bx cx dx
+
+	; Limpia la pantalla
+	call limpia_pantalla
+	
+	; Imprime el mensaje de informacion del desinstalador
+	mov ah, 9
+	mov dx, OFFSET mensaje_informacion_desinstalador
+	int 21h
+	
+	; Comprueba el vector INT
+	mov bx, ds ; Guardamos ds para poder imprimir
+	mov cx, 0
+	mov ds, cx
+	cmp ds:[1Ch*4], WORD PTR 0
+	jz no_instalado_desinstalar_1Ch
+	cmp ds:[1Ch*4+2], WORD PTR 0
+	jz no_instalado_desinstalar_1Ch
+	
+	; Comprueba si está instalado (firma)
+	call comprueba_instalado
+	cmp ax, 0
+	je no_instalado_desinstalar_1Ch
+	
+	; Desinstala el driver
+	desinstalar_1Ch:
+	mov cx, 0
+	mov ds, cx				; Segmento de vectores interrupción
+	mov es, ds:[1Ch*4+2]	; Lee segmento de RSI
+	mov bx, es:[2Ch]		; Lee segmento de entorno del PSP de RSI
+	mov ah, 49h
+	int 21h					; Libera segmento de RSI (es)
+	mov es, bx
+	int 21h					; Libera segmento de variables de entorno de RSI
+	
+	; Pone a cero vector de interrupción 57h
+	cli
+	mov ds:[1Ch*4], cx 		; cx = 0
+	mov ds:[1Ch*4+2], cx
+	sti
+	
+	jmp final_desinstalador_1Ch
+	
+	no_instalado_desinstalar_1Ch:
+	mov ds, bx
+	call rutina_mensaje_instalado
+	
+	final_desinstalador_1Ch:
+	pop dx cx bx ax
+	ret
+rutina_desinstalador_1Ch ENDP
 
 limpia_pantalla PROC
 	push dx ax
