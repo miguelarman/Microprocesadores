@@ -1,10 +1,43 @@
+;**************************************************************************
+;               SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  ;
+;                    PRÁCTICA 4: Diseño de programas                      ;
+;                              residentes                                 ;
+;**************************************************************************
+; Autores:																  ;
+; 			- Miguel Arconada Manteca									  ;
+;				(miguel.arconada@estudiante.uam.es)						  ;
+; 			- Mario García Pascual										  ;
+;				(mario.garciapascual@estudiante.uam.es)					  ;
+;**************************************************************************
+; Fecha:	2 de mayo de 2019											  ;
+;**************************************************************************
+; Descripción:															  ;
+;			En este fichero, realizamos un programa en ensamblador en el  ;
+;		que se realizan dos funciones:									  ;
+;																		  ;
+;			En primer lugar, definimos la rutina rsi, en la que           ;
+;		ciframos o desciframos una cadena por el método Polibio según el  ;
+;		valor de ah.													  ;
+;																		  ;
+;			Por otro lado, el programa principal, que se encarga de		  ;
+;		varias tareas:													  ;
+;			1- Si no recibe argumentos, imprime un mensaje de información,;
+;			y comprueba si el driver ya está instalado					  ;
+;			2- Si recibe como argumentos /I, instala el driver de la	  ;
+;			rutina rsi para la interrupción 57h							  ;
+;			3- Si recibe /D, desinstala el driver, y establece el que	  ;
+;			hubiera en el momento de la instalación						  ;
+;			4- Si recibe otro argumento, imprime un mensaje de error	  ;
+;**************************************************************************
+
 codigo SEGMENT
-	ASSUME cs : codigo
-	ORG 256
+	assume cs : codigo
+	org 256
 	
+; Establece dónde debe empezar la ejecución del programa
 inicio: jmp lee_argumentos
 
-; Variables globales
+; Variables usadas por la rutina para cifrar y descifrar
 table_ctop								db	48 dup(?,?)
 										db	"6566"
 										db	"111213141516"
@@ -21,6 +54,7 @@ table_ptoc								db	"234567"
 										db	"KLMNOP"
 										db	"QRSTUV"
 										db	"WXYZ01"
+; Mensajes que se muestan por pantalla
 perror									db	"Error: el servicio pedido no existe:"
 										db	" AH=10h para codificar,"
 										db	" AH=11h para decodificar$"
@@ -46,22 +80,26 @@ clear_pantalla							db	1BH,"[2","J$"
 mensaje_instalado						db	0Ah,"El driver esta instalado$"
 mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 
+; Valores del vector de interrupcion antes de instalar
 offset_anterior_57h						dw	?
 segmento_anterior_57h					dw	?
+
+; Valor para comprobar si el driver está instalado
 firma									dw	0ACABh
 
-; Rutina de servicio a la interrupción
+; Rutina llamada por la interrupción 57h
 rsi PROC FAR
 	; Salva registros modificados
 	push ax
 	
-	; Instrucciones de la rutina
+	; Analiza el valor en ah
 	cmp ah, 10h
     je opt_encode
     
     cmp ah, 11h
     je opt_decode
     
+	; Imprime mensaje de error
     lea dx, perror
     mov ah, 9
     int 21h
@@ -210,6 +248,8 @@ dec_char proc near
     ret     
 dec_char endp
 
+; Rutina principal del programa. Analiza los argumentos escritos
+; al llamar al programa
 lee_argumentos:
 
 	; Lee del PSP el tamaño en bytes de los parámetros del programa
@@ -261,8 +301,10 @@ error_parametros_sin_barra:
 desinstalador:
 	call rutina_desinstalador
 	jmp fin_ejecucion_normal
-	
+
+	; Código para instalar el driver de la interrupción 57h
 instalador:
+
 	; Limpia la pantalla
 	call limpia_pantalla
 	
@@ -271,11 +313,13 @@ instalador:
 	mov dx, OFFSET mensaje_informacion_instalador
 	int 21h
 
+	; Inicializa registros
 	mov ax, 0
 	mov es, ax
 	mov ax, OFFSET rsi
 	mov bx, cs
 	
+	; Modifica los valores de vectores de interrupción y guarda los anteriores
 	cli
 	mov cx, es:[57h*4]
 	mov offset_anterior_57h, cx
@@ -285,7 +329,6 @@ instalador:
 	mov es:[57h*4+2], bx
 	sti
 	
-	;mov dx, OFFSET final_programa
 	mov dx, OFFSET lee_argumentos
 	int 27h	; Acaba y deja residente
 			; PSP, variables y rutina rsi.
@@ -299,6 +342,7 @@ rsi ENDP
 ;;                RUTINAS AUXILIARES               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Rutina que imprime un mensaje de información y comprueba si el driver está instalado
 rutina_informacion PROC
 	push ax dx
 	
@@ -316,6 +360,7 @@ rutina_informacion PROC
 	ret
 rutina_informacion ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_num_caracteres PROC
 	push ax dx
 	
@@ -331,6 +376,7 @@ rutina_error_parametros_num_caracteres PROC
 	ret
 rutina_error_parametros_num_caracteres ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_otro_caracter PROC
 	push ax dx
 	
@@ -346,13 +392,14 @@ rutina_error_parametros_otro_caracter PROC
 	ret
 rutina_error_parametros_otro_caracter ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_sin_barra PROC
 	push ax dx
 	
 	; Limpia la pantalla
 	lea dx, clear_pantalla
 	mov ah, 9
-	INT 21H
+	int 21h
 	
 	; Imprime el mensaje de informacion
 	mov ah, 9
@@ -363,6 +410,7 @@ rutina_error_parametros_sin_barra PROC
 	ret
 rutina_error_parametros_sin_barra ENDP
 
+; Rutina que desintala el driver y restaura el anterior
 rutina_desinstalador PROC
 	push ax bx cx dx ds es
 
@@ -420,6 +468,7 @@ rutina_desinstalador PROC
 	ret
 rutina_desinstalador ENDP
 
+; Rutina que limpia la pantalla
 limpia_pantalla PROC
 	push dx ax
 	
@@ -432,6 +481,7 @@ limpia_pantalla PROC
 	ret
 limpia_pantalla ENDP
 
+; Rutina que imprime un mensaje sobre si el driver está instalado
 rutina_mensaje_instalado PROC
 	push ax
 	call comprueba_instalado
@@ -457,6 +507,7 @@ rutina_mensaje_instalado PROC
 	ret
 rutina_mensaje_instalado ENDP
 
+; Rutina que comprueba si el driver está instalado
 comprueba_instalado PROC
 	push bx es ds
 	
@@ -487,18 +538,6 @@ comprueba_instalado PROC
 	ret
 	
 comprueba_instalado ENDP
-
-debug PROC
-	push ax dx
-		
-	; Imprime el mensaje de informacion del desinstalador
-	mov ah, 9
-	mov dx, OFFSET mensaje_debug
-	int 21h
-	
-	pop dx ax
-	ret
-debug ENDP
 
 codigo ENDS
 END inicio

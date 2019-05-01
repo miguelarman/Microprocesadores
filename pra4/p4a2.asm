@@ -1,10 +1,48 @@
-﻿codigo SEGMENT
+﻿;**************************************************************************
+;               SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  ;
+;                    PRÁCTICA 4: Diseño de programas                      ;
+;                              residentes                                 ;
+;**************************************************************************
+; Autores:																  ;
+; 			- Miguel Arconada Manteca									  ;
+;				(miguel.arconada@estudiante.uam.es)						  ;
+; 			- Mario García Pascual										  ;
+;				(mario.garciapascual@estudiante.uam.es)					  ;
+;**************************************************************************
+; Fecha:	2 de mayo de 2019											  ;
+;**************************************************************************
+; Descripción:															  ;
+;			En este fichero, realizamos un programa en ensamblador en el  ;
+;		que se realizan tres funciones:									  ;
+;																		  ;
+;			En primer lugar, definimos la rutina rsi, en la que           ;
+;		ciframos o desciframos una cadena por el método Polibio según el  ;
+;		valor de ah, estando pendiente del valor de la variable sec_cnt	  ;
+;																		  ;
+;			En segundo lugar, definimos otra rutina, que se va a ejecutar ;
+;		con la interrupción periódica, y que incrementa sec_cnt 18 veces  ;
+;		por segundo.
+;																		  ;
+;			Por otro lado, el programa principal, que se encarga de		  ;
+;		varias tareas:													  ;
+;			1- Si no recibe argumentos, imprime un mensaje de información,;
+;			y comprueba si los drivers ya están instalados				  ;
+;			2- Si recibe como argumentos /I, instala el driver de la	  ;
+;			rutina rsi para la interrupción 57h y de la rutina periódica  ;
+;			para la interrupción 1Ch									  ;
+;			3- Si recibe /D, desinstala los drivers, y establece los que  ;
+;			hubiera en el momento de la instalación						  ;
+;			4- Si recibe otro argumento, imprime un mensaje de error	  ;
+;**************************************************************************
+
+codigo SEGMENT
 	ASSUME cs : codigo
 	ORG 256
 	
+; Establece dónde debe empezar la ejecución del programa
 inicio: jmp lee_argumentos
 
-; Variables globales
+; Variables usadas por la rutina para cifrar y descifrar
 table_ctop								db	48 dup(?,?)
 										db	"6566"
 										db	"111213141516"
@@ -21,6 +59,7 @@ table_ptoc								db	"234567"
 										db	"KLMNOP"
 										db	"QRSTUV"
 										db	"WXYZ01"
+; Mensajes que se muestan por pantalla
 perror									db	"Error: el servicio pedido no existe:"
 										db	" AH=10h para codificar,"
 										db	" AH=11h para decodificar$"
@@ -47,29 +86,33 @@ clear_pantalla							db	1BH,"[2","J$"
 mensaje_instalado						db	0Ah,"El driver esta instalado$"
 mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 
+; Variable acutalizada por la rutina 1Ch
 sec_cnt									db	0
-empty									db	"$"
 
+; Valores del vector de interrupcion antes de instalar
 offset_anterior_57h						dw	?
 segmento_anterior_57h					dw	?
+
+; Valor para comprobar si el driver de 57h está instalado
 firma									dw	0ABACh
 
 
 
-; Rutina de servicio a la interrupción
+; Rutina llamada por la interrupción 57h
 rsi PROC FAR
 	sti
 	
 	; Salva registros modificados
 	push ax si ds dx
 	
-	; Instrucciones de la rutina
+	; Decide por el valor en ah
 	cmp ah, 10h
     je opt_encode
     
     cmp ah, 11h
     je opt_decode
     
+	; Imprime mensaje de error
     lea dx, perror
     mov ah, 9
     int 21h
@@ -100,9 +143,9 @@ b0:
     cmp dl, "$"
     je salir
     
+	; Espera a que la interrupción 1Ch incremente la variable 18 veces (1 segundo)
     mov sec_cnt, 0
 delay:
-	;inc sec_cnt
 	cmp sec_cnt, 18
     jb delay
     
@@ -238,10 +281,14 @@ dec_char proc near
     ret     
 dec_char endp
 
+; Valores del vector de interrupcion antes de instalar
 offset_anterior_1Ch		dw	?
 segmento_anterior_1Ch	dw	?
+
+; Valor para comprobar si el driver de 1Ch está instalado
 firma_2					dw	0AAAAh
 
+; Rutina llamada por la interrupción 1Ch 18 veces por segundo
 rutina_periodica PROC
 	; Guarda los registros que modifica
 	push ax ds
@@ -257,6 +304,8 @@ rutina_periodica PROC
 	iret
 rutina_periodica ENDP
 
+; Rutina principal del programa. Analiza los argumentos escritos
+; al llamar al programa
 lee_argumentos:
 
 	; Lee del PSP el tamaño en bytes de los parámetros del programa
@@ -321,6 +370,8 @@ rsi ENDP
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                RUTINAS AUXILIARES               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Rutina para instalar el driver de la interrupción 57h y 1Ch
 rutina_instalador PROC
 	; Limpia la pantalla
 	call limpia_pantalla
@@ -366,12 +417,12 @@ rutina_instalador PROC
 	and ax, 0FFFEh
 	out 21h, ax
 	
-	;mov dx, OFFSET final_programa
 	mov dx, OFFSET lee_argumentos
 	int 27h	; Acaba y deja residente
 			; PSP, variables y rutina rsi.
 rutina_instalador ENDP
 
+; Rutina que imprime un mensaje de información y comprueba si el driver está instalado
 rutina_informacion PROC
 	push ax dx
 	
@@ -390,6 +441,7 @@ rutina_informacion PROC
 	ret
 rutina_informacion ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_num_caracteres PROC
 	push ax dx
 	
@@ -405,6 +457,7 @@ rutina_error_parametros_num_caracteres PROC
 	ret
 rutina_error_parametros_num_caracteres ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_otro_caracter PROC
 	push ax dx
 	
@@ -420,6 +473,7 @@ rutina_error_parametros_otro_caracter PROC
 	ret
 rutina_error_parametros_otro_caracter ENDP
 
+; Rutina que imprime un mensaje de error
 rutina_error_parametros_sin_barra PROC
 	push ax dx
 	
@@ -437,6 +491,8 @@ rutina_error_parametros_sin_barra PROC
 	ret
 rutina_error_parametros_sin_barra ENDP
 
+; Rutina que desintala el driver para la
+; interrupción 57h y restaura el anterior
 rutina_desinstalador_57h PROC
 	push ax bx cx dx ds es
 
@@ -495,6 +551,8 @@ rutina_desinstalador_57h PROC
 	ret
 rutina_desinstalador_57h ENDP
 
+; Rutina que desintala el driver para la
+; interrupción 1Ch y restaura el anterior
 rutina_desinstalador_1Ch PROC
 	push ax bx cx dx ds es
 	
@@ -549,6 +607,7 @@ rutina_desinstalador_1Ch PROC
 	ret
 rutina_desinstalador_1Ch ENDP
 
+; Rutina que limpia la pantalla
 limpia_pantalla PROC
 	push dx ax
 	
@@ -561,6 +620,8 @@ limpia_pantalla PROC
 	ret
 limpia_pantalla ENDP
 
+; Rutina que imprime un mensaje sobre si el driver para
+; la interrupción 57h está instalado
 rutina_mensaje_instalado_57h PROC
 	push ax
 	call comprueba_instalado_57h
@@ -586,6 +647,8 @@ rutina_mensaje_instalado_57h PROC
 	ret
 rutina_mensaje_instalado_57h ENDP
 
+; Rutina que imprime un mensaje sobre si el driver para
+; la interrupción 1Ch está instalado
 rutina_mensaje_instalado_1Ch PROC
 	push ax
 	call comprueba_instalado_1Ch
@@ -611,6 +674,8 @@ rutina_mensaje_instalado_1Ch PROC
 	ret
 rutina_mensaje_instalado_1Ch ENDP
 
+; Rutina que comprueba si el driver para la
+; interrupción 57h está instalado
 comprueba_instalado_57h PROC
 	push bx es ds
 	
@@ -640,6 +705,8 @@ comprueba_instalado_57h PROC
 	
 comprueba_instalado_57h ENDP
 
+; Rutina que comprueba si el driver para la
+; interrupción 57h está instalado
 comprueba_instalado_1Ch PROC
 	push bx es ds
 	
@@ -668,18 +735,6 @@ comprueba_instalado_1Ch PROC
 	ret
 	
 comprueba_instalado_1Ch ENDP
-
-debug PROC
-	push ax dx
-		
-	; Imprime el mensaje de informacion del desinstalador
-	mov ah, 9
-	mov dx, OFFSET mensaje_debug
-	int 21h
-	
-	pop dx ax
-	ret
-debug ENDP
 
 codigo ENDS
 END inicio
