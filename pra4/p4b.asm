@@ -1,10 +1,29 @@
 ;**************************************************************************
-; SBM 2019. ESTRUCTURA BÁSICA DE UN PROGRAMA EN ENSAMBLADOR
+;               SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  ;
+;                    PRÁCTICA 4: Diseño de programas                      ;
+;                              residentes                                 ;
 ;**************************************************************************
-; DEFINICION DEL SEGMENTO DE DATOS
+; Autores:																  ;
+; 			- Miguel Arconada Manteca									  ;
+;				(miguel.arconada@estudiante.uam.es)						  ;
+; 			- Mario García Pascual										  ;
+;				(mario.garciapascual@estudiante.uam.es)					  ;
+;**************************************************************************
+; Fecha:	2 de mayo de 2019											  ;
+;**************************************************************************
+; Descripción:															  ;
+;			En este fichero, realizamos un programa en ensamblador para   ;
+;		probar la instalación del driver creado en el fichero p4a.com.    ;
+;       Para ello, ciframos y desciframos una cadena con la interrupción  ;
+;       57h, para ver si funciona correctamente y el resultado final es   ;
+;       igual a la cadena original, sea cual sea la cadena,               ;
+;**************************************************************************
+
 datos SEGMENT
+; Comando para limpiar la pantalla
 clear_pantalla		db	1BH,"[2","J$"
 
+; Mensajes que se van a mostrar por la pantalla
 mensaje_inicial		db	"Informacion acerca de este programa:", 0Ah
 					db	9h, "1- Muestra por pantalla la matriz polibia utilizada", 0Ah
 					db	9h, "2- Codifica el mensaje de prueba prefijado", 0Ah
@@ -47,16 +66,12 @@ EXTRA SEGMENT
 EXTRA ENDS
 ;**************************************************************************
 
-; DEFINICION DEL SEGMENTO DE CODIGO
-CODE SEGMENT
-	ASSUME CS: CODE, DS: datos, ES: EXTRA
+code segment
+	assume cs: code, ds: datos
 
-; COMIENZO DEL PROCEDIMIENTO PRINCIPAL
-INICIO PROC
-	MOV AX, datos
-	MOV DS, AX
-	
-	; COMIENZO DEL PROGRAMA
+inicio PROC
+	mov ax, datos
+	mov ds, ax
 	
 	call limpia_pantalla
 	
@@ -114,10 +129,10 @@ INICIO PROC
 	mov dx, OFFSET pmensaje_final
 	int 21h
 	
-	; FIN DEL PROGRAMA
-	MOV AX, 4C00H
-	INT 21H
-INICIO ENDP
+	; Fin del programa
+	mov ax, 4C00h
+	int 21h
+inicio ENDP
 
 limpia_pantalla PROC
 	push dx ax
@@ -132,5 +147,5 @@ limpia_pantalla PROC
 limpia_pantalla ENDP
 
 
-CODE ENDS
-END INICIO
+code ENDS
+END inicio
