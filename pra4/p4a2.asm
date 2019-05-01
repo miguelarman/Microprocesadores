@@ -36,8 +36,9 @@ mensaje_informacion_general				db	"Informacion acerca de este programa:", 0Ah
 										db	9h, "Miguel Arconada", 0Ah
 										db	9h, "Mario Garcia", 0Ah
 										db	"$"
-mensaje_informacion_instalador			db "Se ha ejecutado el instalador$"
-mensaje_informacion_desinstalador		db "Se ha ejecutado el desinstalador$"
+mensaje_informacion_instalador			db	"Se ha ejecutado el instalador$"
+mensaje_informacion_desinstalador_57h	db	"Se ha ejecutado el desinstalador de 57h$"
+mensaje_informacion_desinstalador_1Ch	db	0Ah, "Se ha ejecutado el desinstalador de 1Ch$"
 mensaje_error_parametros_num_caracteres	db	"Error en los parametros: Escribe solo dos caracteres$"
 mensaje_error_parametros_otro_caracter	db	"Error en los parametros: El parametro tiene que ser /I o /D$"
 mensaje_error_parametros_sin_barra		db	"Error en los parametros: El parametro tiene que empezar por /$"
@@ -234,6 +235,8 @@ dec_char proc near
     ret     
 dec_char endp
 
+firma_2	dw	0AAAAh
+
 rutina_periodica PROC
 	; Guarda los registros que modifica
 	push ax ds
@@ -325,17 +328,20 @@ rutina_instalador PROC
 	mov ah, 9
 	mov dx, OFFSET mensaje_informacion_instalador
 	int 21h
-
+	
+	; Bloquea la interrupcion
+	in ax, 21h
+	or ah, 1
+	out 21h, ax
+	
 	; Instala el driver para la interrupcion 57h
 	mov ax, 0
 	mov es, ax
 	mov ax, OFFSET rsi
 	mov bx, cs
 	
-	cli
 	mov es:[57h*4], ax
 	mov es:[57h*4+2], bx
-	sti
 	
 	; Instala el driver para la interrupcion periodica (1Ch)
 	mov ax, 0
@@ -343,10 +349,13 @@ rutina_instalador PROC
 	mov ax, OFFSET rutina_periodica
 	mov bx, cs
 	
-	cli
 	mov es:[1Ch*4], ax
 	mov es:[1Ch*4+2], bx
-	sti
+	
+	; Desbloquea las interrupciones
+	in ax, 21h
+	and ax, 0FFFEh
+	out 21h, ax
 	
 	;mov dx, OFFSET final_programa
 	mov dx, OFFSET lee_argumentos
@@ -365,7 +374,8 @@ rutina_informacion PROC
 	mov dx, OFFSET mensaje_informacion_general
 	int 21h
 	
-	call rutina_mensaje_instalado
+	call rutina_mensaje_instalado_57h
+	call rutina_mensaje_instalado_1Ch
 	
 	pop dx ax
 	ret
@@ -419,14 +429,14 @@ rutina_error_parametros_sin_barra PROC
 rutina_error_parametros_sin_barra ENDP
 
 rutina_desinstalador_57h PROC
-	push ax bx cx dx
+	push ax bx cx dx ds es
 
 	; Limpia la pantalla
 	call limpia_pantalla
 	
 	; Imprime el mensaje de informacion del desinstalador
 	mov ah, 9
-	mov dx, OFFSET mensaje_informacion_desinstalador
+	mov dx, OFFSET mensaje_informacion_desinstalador_57h
 	int 21h
 	
 	; Comprueba el vector INT
@@ -439,7 +449,7 @@ rutina_desinstalador_57h PROC
 	jz no_instalado_desinstalar
 	
 	; Comprueba si está instalado (firma)
-	call comprueba_instalado
+	call comprueba_instalado_57h
 	cmp ax, 0
 	je no_instalado_desinstalar
 	
@@ -464,22 +474,19 @@ rutina_desinstalador_57h PROC
 	
 	no_instalado_desinstalar:
 	mov ds, bx
-	call rutina_mensaje_instalado
+	call rutina_mensaje_instalado_57h
 	
 	final_desinstalador:
-	pop dx cx bx ax
+	pop es ds dx cx bx ax
 	ret
 rutina_desinstalador_57h ENDP
 
 rutina_desinstalador_1Ch PROC
-	push ax bx cx dx
+	push ax bx cx dx ds es
 
-	; Limpia la pantalla
-	call limpia_pantalla
-	
 	; Imprime el mensaje de informacion del desinstalador
 	mov ah, 9
-	mov dx, OFFSET mensaje_informacion_desinstalador
+	mov dx, OFFSET mensaje_informacion_desinstalador_1Ch
 	int 21h
 	
 	; Comprueba el vector INT
@@ -492,7 +499,7 @@ rutina_desinstalador_1Ch PROC
 	jz no_instalado_desinstalar_1Ch
 	
 	; Comprueba si está instalado (firma)
-	call comprueba_instalado
+	call comprueba_instalado_1Ch
 	cmp ax, 0
 	je no_instalado_desinstalar_1Ch
 	
@@ -517,10 +524,10 @@ rutina_desinstalador_1Ch PROC
 	
 	no_instalado_desinstalar_1Ch:
 	mov ds, bx
-	call rutina_mensaje_instalado
+	call rutina_mensaje_instalado_1Ch
 	
 	final_desinstalador_1Ch:
-	pop dx cx bx ax
+	pop es ds dx cx bx ax
 	ret
 rutina_desinstalador_1Ch ENDP
 
@@ -536,9 +543,9 @@ limpia_pantalla PROC
 	ret
 limpia_pantalla ENDP
 
-rutina_mensaje_instalado PROC
+rutina_mensaje_instalado_57h PROC
 	push ax
-	call comprueba_instalado
+	call comprueba_instalado_57h
 	
 	cmp ax, 1
 	je imprime_mensaje_instalado
@@ -559,9 +566,34 @@ rutina_mensaje_instalado PROC
 	
 	pop ax
 	ret
-rutina_mensaje_instalado ENDP
+rutina_mensaje_instalado_57h ENDP
 
-comprueba_instalado PROC
+rutina_mensaje_instalado_1Ch PROC
+	push ax
+	call comprueba_instalado_1Ch
+	
+	cmp ax, 1
+	je imprime_mensaje_instalado_1Ch
+	jmp imprime_mensaje_no_intalado_1Ch
+	
+	imprime_mensaje_instalado_1Ch:
+	mov ah, 9
+	mov dx, OFFSET mensaje_instalado
+	int 21h
+	
+	pop ax
+	ret
+	
+	imprime_mensaje_no_intalado_1Ch:
+	mov ah, 9
+	mov dx, OFFSET mensaje_no_instalado
+	int 21h
+	
+	pop ax
+	ret
+rutina_mensaje_instalado_1Ch ENDP
+
+comprueba_instalado_57h PROC
 	push bx ds
 	
 	mov ax, 0
@@ -575,8 +607,6 @@ comprueba_instalado PROC
 	
 	je iguales
 	jmp distintos
-
-	ret
 	
 	iguales:
 	mov ax, 1
@@ -590,7 +620,36 @@ comprueba_instalado PROC
 	pop ds bx
 	ret
 	
-comprueba_instalado ENDP
+comprueba_instalado_57h ENDP
+
+comprueba_instalado_1Ch PROC
+	push bx ds
+	
+	mov ax, 0
+	mov es, ax
+	
+	les bx, es:[1Ch*4]
+	mov bx, es:[bx-2]
+	
+	mov ax, firma_2
+	cmp ax, bx
+	
+	je iguales_1Ch
+	jmp distintos_1Ch
+	
+	iguales_1Ch:
+	mov ax, 1
+	jmp final_comprueba_instalado_1Ch
+
+	distintos_1Ch:
+	mov ax, 0
+	jmp final_comprueba_instalado_1Ch
+	
+	final_comprueba_instalado_1Ch:
+	pop ds bx
+	ret
+	
+comprueba_instalado_1Ch ENDP
 
 debug PROC
 	push ax dx

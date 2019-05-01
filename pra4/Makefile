@@ -25,4 +25,3 @@ clean:
 	del *.com
 	del *.exe
 	del *.lst
-	

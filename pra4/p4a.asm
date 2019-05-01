@@ -358,7 +358,7 @@ rutina_error_parametros_sin_barra PROC
 rutina_error_parametros_sin_barra ENDP
 
 rutina_desinstalador PROC
-	push ax bx cx dx
+	push ax bx cx dx ds es
 
 	; Limpia la pantalla
 	call limpia_pantalla
@@ -406,7 +406,7 @@ rutina_desinstalador PROC
 	call rutina_mensaje_instalado
 	
 	final_desinstalador:
-	pop dx cx bx ax
+	pop es ds dx cx bx ax
 	ret
 rutina_desinstalador ENDP
 
