@@ -50,10 +50,8 @@ mensaje_no_instalado					db	0Ah,"El driver no esta instalado$"
 sec_cnt									db	0
 empty									db	"$"
 
-segmento_anterior_1Ch					dw	?
-offset_anterior_1Ch						dw	?
-segmento_anterior_57h					dw	?
 offset_anterior_57h						dw	?
+segmento_anterior_57h					dw	?
 firma									dw	0ABACh
 
 
@@ -240,21 +238,19 @@ dec_char proc near
     ret     
 dec_char endp
 
-firma_2	dw	0AAAAh
+offset_anterior_1Ch		dw	?
+segmento_anterior_1Ch	dw	?
+firma_2					dw	0AAAAh
 
 rutina_periodica PROC
 	; Guarda los registros que modifica
 	push ax ds
+	
 	; Instrucciones del programa
 	mov ax, cs
 	mov ds, ax
 	
 	inc sec_cnt
-	
-	;lea dx, mensaje_debug
-	;mov ah, 9h
-	;int 21h
-	
 	
 	; Recupera los registros que modifica
 	pop ds ax
@@ -479,10 +475,13 @@ rutina_desinstalador_57h PROC
 	
 	; Reestablece el vector de interrupción 57h
 	cli
-	mov cx, offset_anterior_57h
+	mov ax, 0
+	mov es, ax
+	les bx, es:[57h*4]
+	mov cx, es:[bx-6]
+	mov dx, es:[bx-4]
 	mov ds:[57h*4], cx
-	mov cx, segmento_anterior_57h
-	mov ds:[57h*4+2], cx
+	mov ds:[57h*4+2], dx
 	sti
 	
 	jmp final_desinstalador
@@ -529,12 +528,14 @@ rutina_desinstalador_1Ch PROC
 	mov es, bx
 	int 21h					; Libera segmento de variables de entorno de RSI
 	
-	; Reestablece el vector de interrupción 1Ch
 	cli
-	mov cx, offset_anterior_1Ch
+	mov ax, 0
+	mov es, ax
+	les bx, es:[1Ch*4]
+	mov cx, es:[bx-6]
+	mov dx, es:[bx-4]
 	mov ds:[1Ch*4], cx
-	mov cx, segmento_anterior_1Ch
-	mov ds:[1Ch*4+2], cx
+	mov ds:[1Ch*4+2], dx
 	sti
 	
 	jmp final_desinstalador_1Ch
