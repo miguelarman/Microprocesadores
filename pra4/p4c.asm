@@ -16,17 +16,22 @@
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
 	crnl		db	10,13,"$"
-	buff		db  26			; numero maximo de caracteres
+	buff		db  65			; numero maximo de caracteres
 	nchars	  	db  ?			; caracteres introducidos por el usuario
-	in_str	  	db	26 dup(?)  	; string introducido por el usuario
+	in_str	  	db	65 dup(?)  	; string introducido por el usuario
 	cod			db	"cod$"
 	decod	   	db	"decod$"
 	quit		db	"quit$"
 	mode		db	10h		; el modo predeterminado es cod
+	clear		db	1BH,"[2","J$"
 	pwelcome	db	"Hola! Este programa codifica/decodifica las cadenas que le pases y las imprime", 0Ah
 				db	"al ritmo de un caracter por segundo. Los comandos de control son 'cod' para", 0Ah
 				db	"codificar, 'decod' para decodificar, y 'quit' para salir del programa.", 0Ah
-				db	"El modo por defecto es 'cod'.",10,13,"$"
+				db	"El modo por defecto es 'cod'. Para decodificar en polibio introduce los", 0Ah
+				db	"caracteres codificados sin ninguna separacion, e.g. '1112' en vez de '11 12'.", 0Ah
+				db	"El numero maximo de caracteres que se pueden introducir es 64, por tanto no", 0Ah
+				db	"se pueden decodificar cadenas en polibio que provengan de cadenas de mas", 0Ah
+				db	"de 32 caracteres.",10,13,"$"
 DATOS ENDS
 
 ;**************************************************************************
@@ -64,6 +69,8 @@ start:
 	mov ax, DATOS
 	mov ds, ax
 	mov es, ax
+	
+	call limpia_pantalla
 
 	lea dx, pwelcome
 	mov ah, 9
@@ -158,6 +165,20 @@ fin_b0:
 
 	ret
 str_cmp endp
+
+; Rutina que limpia la pantalla
+limpia_pantalla PROC
+	push dx ax
+
+	; Limpia la pantalla
+	lea dx, clear
+	mov ah, 9
+	INT 21H
+
+	pop ax dx
+	ret
+limpia_pantalla ENDP
+
 ; FIN DEL SEGMENTO DE CODIGO
 CODE ENDS
 END INICIO
