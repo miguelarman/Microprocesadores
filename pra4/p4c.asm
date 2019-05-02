@@ -1,16 +1,33 @@
 ;**************************************************************************
-; SBM 2019. ESTRUCTURA BÁSICA DE UN PROGRAMA EN ENSAMBLADOR
+;			   SISTEMAS BASADOS EN MICROPROCESADORES - 2019			  
+;					PRÁCTICA 4: Diseño de programas					  
+;							  residentes								 
+;**************************************************************************
+; Autores:																  
+; 			- Miguel Arconada Manteca									  
+;				(miguel.arconada@estudiante.uam.es)						  
+; 			- Mario García Pascual										  
+;				(mario.garciapascual@estudiante.uam.es)					  
+;**************************************************************************
+; Fecha:	2 de mayo de 2019											  
+;**************************************************************************
+
 ;**************************************************************************
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
-	crnl        db	10,13,"$"
-    buff        db  26        ; numero maximo de caracteres
-    nchars      db  ?         ; caracteres introducidos por el usuario
-    in_str      db	26 dup(?)  ; string introducido por el usuario
-    cod         db	"cod$"
-    decod       db	"decod$"
-    quit        db	"quit$"
-    mode        db	10h        ; el modo predeterminado es cod
+	crnl		db	10,13,"$"
+	buff		db  	26		; numero maximo de caracteres
+	nchars	  	db  	?		; caracteres introducidos por el usuario
+	in_str	  	db	26 dup(?)  	; string introducido por el usuario
+	cod		db	"cod$"
+	decod	   	db	"decod$"
+	quit		db	"quit$"
+	mode		db	10h		; el modo predeterminado es cod
+	pwelcome	db	"¡Hola! Este programa codifica/decodifica las cadenas"
+			db	"que le pases y las imprime al ritmo de un caracter"
+			db	"por segundo. Los comandos de control son 'cod' para"
+			db	"codificar, 'decod' para decodificar, y 'quit' para"
+			db	"para salir del programa. El modo por defecto es 'cod'.",10,13,"$"
 DATOS ENDS
 
 ;**************************************************************************
@@ -40,71 +57,78 @@ INICIO PROC
 	MOV ES, AX
 	MOV SP, 64 ; CARGA EL PUNTERO DE PILA CON EL VALOR MAS ALTO
 	; FIN DE LAS INICIALIZACIONES
-	
+
 	; COMIENZO DEL PROGRAMA
-	
+
 start:
 ; set segment registers:
-    mov ax, DATOS
-    mov ds, ax
-    mov es, ax
-    
+	mov ax, DATOS
+	mov ds, ax
+	mov es, ax
 
-    
+	lea dx, pwelcome
+	mov ah, 9
+	int 21h
+
 bucle:
-    ;; Leemos input del usuario
-    lea dx, buff
-    mov ah, 10
-    int 21h
-    
-    ;; Le ponemos un $ al final
-    mov al, nchars
-    mov ah, 0
-    mov si, ax
-    mov in_str[si], "$" 
-    
-    ;; Salto de linea y retorno de carro
-    lea dx, crnl
-    mov ah, 9
-    int 21h
-    
-    lea bx, cod
-    call str_cmp
-    cmp al, 0
-    je opt_cod
-    
-    lea bx, decod
-    call str_cmp
-    cmp al, 0
-    je opt_decod
-    
-    lea bx, quit
-    call str_cmp
-    cmp al, 0
-    je salir
-    
-    lea dx, in_str
-    mov ah, mode
-    int 57h
-    
-    ;; Salto de linea y retorno de carro
-    lea dx, crnl
-    mov ah, 9
-    int 21h
-    
-    jmp bucle
-    
+	;; Leemos input del usuario
+	lea dx, buff
+	mov ah, 10
+	int 21h
+
+	;; Le ponemos un $ al final
+	mov al, nchars
+	mov ah, 0
+	mov si, ax
+	mov in_str[si], "$"
+
+	;; Salto de linea y retorno de carro
+	lea dx, crnl
+	mov ah, 9
+	int 21h
+
+	;; Si la cadena introducida es de control
+	;; se hace lo que corresponda
+	lea bx, cod
+	call str_cmp
+	cmp al, 0
+	je opt_cod
+
+	lea bx, decod
+	call str_cmp
+	cmp al, 0
+	je opt_decod
+
+	lea bx, quit
+	call str_cmp
+	cmp al, 0
+	je salir
+
+	;; Si la cadena introducida no es de control
+	;; se codifica/decodifica
+	lea dx, in_str
+	mov ah, mode
+	int 57h
+
+	;; Salto de linea y retorno de carro
+	lea dx, crnl
+	mov ah, 9
+	int 21h
+
+	jmp bucle
+
 opt_cod:
-    mov mode, 10h
-    jmp bucle
+	mov mode, 10h
+	jmp bucle
 
 opt_decod:
-    mov mode, 11h
-    jmp bucle    
+	mov mode, 11h
+	jmp bucle
 
-salir:    
-    mov ax, 4c00h ; exit to operating system.
-    int 21h
+salir:
+	mov ax, 4c00h ; exit to operating system.
+	int 21h
+	
 INICIO ENDP
 
 ;;;;;;
@@ -112,30 +136,28 @@ INICIO ENDP
 ;; Compara la cadena almacenada en in_str con
 ;; la cadena almacenada en DS:BX, ambas acaba-
 ;; das en "$". Devuelve 0 en AL si las cadenas
-;; son iguales y 1 si no lo son
+;; son iguales y algo != 0 si no lo son
 ;;
 str_cmp proc near
-    push si
-    
-    mov si, 0
-b0: 
-    mov al, ds:[bx][si]
-    mov ah, in_str[si]
-    cmp al, "$"
-    je fin_b0
-    
-    inc si 
-    cmp al, ah
-    je b0
-    
-fin_b0:    
-    sub al, ah
-    
-    pop si
-    
-    ret
- 
-    
+	push si
+
+	mov si, 0
+b0:
+	mov al, ds:[bx][si]
+	mov ah, in_str[si]
+	cmp al, "$"
+	je fin_b0
+
+	inc si
+	cmp al, ah
+	je b0
+
+fin_b0:
+	sub al, ah
+
+	pop si
+
+	ret
 str_cmp endp
 ; FIN DEL SEGMENTO DE CODIGO
 CODE ENDS
