@@ -58,7 +58,7 @@ table_ptoc								db	"234567"
 perror									db	"Error: el servicio pedido no existe:"
 										db	" AH=10h para codificar,"
 										db	" AH=11h para decodificar$"
-out_str	 							db	200 dup(?)
+out_str	 								db	200 dup(?)
 mensaje_informacion_general				db	"Informacion acerca de este programa:", 0Ah
 										db	9h, "Llamar a esta funcion con el argumento /I para instalar el driver", 0Ah
 										db	9h, "Llamar a esta funcion con el argumento /D para desinstalar el driver", 0Ah
@@ -122,7 +122,7 @@ imprimir:
 
 salir:
 	; Recupera registros modificados
-	pop dx ax
+	pop ds dx ax
 	iret
 
 ;;;;;;

@@ -16,18 +16,17 @@
 ; DEFINICION DEL SEGMENTO DE DATOS
 DATOS SEGMENT
 	crnl		db	10,13,"$"
-	buff		db  	26		; numero maximo de caracteres
-	nchars	  	db  	?		; caracteres introducidos por el usuario
+	buff		db  26			; numero maximo de caracteres
+	nchars	  	db  ?			; caracteres introducidos por el usuario
 	in_str	  	db	26 dup(?)  	; string introducido por el usuario
-	cod		db	"cod$"
+	cod			db	"cod$"
 	decod	   	db	"decod$"
 	quit		db	"quit$"
 	mode		db	10h		; el modo predeterminado es cod
-	pwelcome	db	"¡Hola! Este programa codifica/decodifica las cadenas"
-			db	"que le pases y las imprime al ritmo de un caracter"
-			db	"por segundo. Los comandos de control son 'cod' para"
-			db	"codificar, 'decod' para decodificar, y 'quit' para"
-			db	"para salir del programa. El modo por defecto es 'cod'.",10,13,"$"
+	pwelcome	db	"Hola! Este programa codifica/decodifica las cadenas que le pases y las imprime", 0Ah
+				db	"al ritmo de un caracter por segundo. Los comandos de control son 'cod' para", 0Ah
+				db	"codificar, 'decod' para decodificar, y 'quit' para salir del programa.", 0Ah
+				db	"El modo por defecto es 'cod'.",10,13,"$"
 DATOS ENDS
 
 ;**************************************************************************
